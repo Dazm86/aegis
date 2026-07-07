@@ -5,6 +5,13 @@ const { hasBudgetRemaining, recordSpend } = require("./core/budget");
 const { runCouncil } = require("./core/council");
 const { makeDecision } = require("./core/decision");
 const { recordViolations } = require("./core/enforcer");
+const { runCoder } = require("./core/coder");
+const fs = require("fs");
+const path = require("path");
+
+const constitution = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "..", "config", "constitution.json"), "utf8")
+);
 
 async function main() {
     console.log("=================================");
@@ -80,8 +87,41 @@ async function main() {
     console.log("Average score:", decision.averageScore, "/ threshold:", decision.threshold);
     console.log("=================================");
 
-    // NOTE: Coder/Deployer steps (actually writing + shipping code) come in the next
-    // iteration once this decision loop has been tested end-to-end.
+    if (decision.approved) {
+        const stillWithinBudget = await hasBudgetRemaining(supabase);
+        if (!stillWithinBudget) {
+            console.log("🚫 Budget cap reached before Coder could run. Skipping code generation.");
+            return;
+        }
+
+        console.log("🛠️  Running Coder role...");
+        const { result: codeResult, violations: coderViolations } = await runCoder({ constitution, mission });
+
+        if (codeResult.usage) {
+            await recordSpend(supabase, codeResult.usage);
+        }
+
+        if (coderViolations.length > 0) {
+            await recordViolations(supabase, coderViolations);
+        }
+
+        if (codeResult.code && codeResult.code.trim() !== "") {
+            await supabase.from("content_queue").insert({
+                content_type: "site_update",
+                content: JSON.stringify({
+                    missionId: mission.id,
+                    missionTitle: mission.title,
+                    explanation: codeResult.explanation,
+                    confidence: codeResult.confidence,
+                    code: codeResult.code
+                }),
+                status: "pending_review"
+            });
+            console.log("📥 Code change added to content_queue (status: pending_review).");
+        } else {
+            console.log("⚠️  Coder did not produce code (see violations/logs). Nothing added to queue.");
+        }
+    }
 }
 
 main().catch(async (err) => {

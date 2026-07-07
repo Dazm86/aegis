@@ -65,4 +65,73 @@ Mission description: ${mission.description}`;
     return { ...parsed, usage: data.usage };
 }
 
-module.exports = { askRole };
+async function generateCode({ constitution, mission }) {
+    const apiKey = process.env.AI_API_KEY;
+    const baseURL = process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
+    const model = process.env.AI_MODEL || "llama-3.3-70b-versatile";
+
+    if (!apiKey) {
+        throw new Error("Missing AI_API_KEY environment variable.");
+    }
+
+    const systemPrompt = `You are acting as the "Coder" role inside the Aegis system.
+Your job: write a small, safe, self-contained HTML/CSS change that implements the approved mission below.
+
+You must strictly follow this constitution:
+${JSON.stringify(constitution, null, 2)}
+
+Rules:
+- Only output a change that is small, low-risk, and directly implements the mission. Do not invent unrelated features.
+- If the mission is too vague or risky to implement safely, say so honestly instead of guessing.
+- Never claim the code is tested — it has not been. It goes into a human review queue before anything is deployed.
+
+Respond ONLY with a JSON object, no markdown, no extra text, in this exact shape:
+{
+  "code": "the HTML/CSS snippet or full file content implementing the change",
+  "explanation": "1-3 sentences explaining what this code does and where it should go",
+  "confidence": "high" | "medium" | "low" | "unknown"
+}`;
+
+    const userPrompt = `Mission title: ${mission.title}
+Mission description: ${mission.description}`;
+
+    const res = await fetch(`${baseURL}/chat/completions`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            model,
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt }
+            ],
+            temperature: 0.2
+        })
+    });
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`AI API request failed (${res.status}): ${errorText}`);
+    }
+
+    const data = await res.json();
+    let raw = data.choices[0].message.content.trim();
+    raw = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+
+    let parsed;
+    try {
+        parsed = JSON.parse(raw);
+    } catch (err) {
+        parsed = {
+            code: "",
+            explanation: "Coder failed to return valid structured output.",
+            confidence: "unknown"
+        };
+    }
+
+    return { ...parsed, usage: data.usage };
+}
+
+module.exports = { askRole, generateCode };
