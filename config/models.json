@@ -1,0 +1,9 @@
+{
+  "roles": [
+    { "roleId": "deputy",   "provider": "openai", "model": "gpt-4o-mini", "enabled": true },
+    { "roleId": "coder",    "provider": "openai", "model": "gpt-4o-mini", "enabled": true },
+    { "roleId": "enforcer", "provider": "openai", "model": "gpt-4o-mini", "enabled": true },
+    { "roleId": "deployer", "provider": "openai", "model": "gpt-4o-mini", "enabled": true }
+  ],
+  "notes": "Multiple roles can point to the same provider+model. To suspend a role, set enabled to false. API keys are never stored here - they come from environment variables / GitHub Actions secrets."
+}

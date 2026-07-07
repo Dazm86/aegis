@@ -1,0 +1,17 @@
+{
+  "name": "aegis",
+  "version": "0.1.0",
+  "description": "Aegis - a self-evolving, multi-role AI system governed by a constitution.",
+  "main": "src/heartbeat.js",
+  "type": "commonjs",
+  "scripts": {
+    "heartbeat": "node src/heartbeat.js",
+    "test": "echo \"no tests yet\" && exit 0"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "dotenv": "^16.4.5",
+    "openai": "^4.60.0"
+  }
+}
