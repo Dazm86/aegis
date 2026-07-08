@@ -31,6 +31,7 @@ jobs:
           AI_BASE_URL: https://api.groq.com/openai/v1
           AI_MODEL: llama-3.3-70b-versatile
           MONTHLY_BUDGET_USD: 5
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
         run: npm run heartbeat
 
       - name: Commit and push staging changes (if any)

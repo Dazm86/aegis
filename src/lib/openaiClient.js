@@ -1,3 +1,7 @@
+// Talks directly to any OpenAI-compatible chat completions endpoint using
+// the built-in fetch (no "openai" npm package needed). Defaults to Groq's
+// free-tier endpoint.
+
 async function askRole({ roleName, roleDescription, constitution, mission }) {
     const apiKey = process.env.AI_API_KEY;
     const baseURL = process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
@@ -65,7 +69,7 @@ Mission description: ${mission.description}`;
     return { ...parsed, usage: data.usage };
 }
 
-async function generateCode({ constitution, mission }) {
+async function generateCode({ constitution, mission, currentHtml, publicSupabaseUrl, publicSupabaseAnonKey }) {
     const apiKey = process.env.AI_API_KEY;
     const baseURL = process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
     const model = process.env.AI_MODEL || "llama-3.3-70b-versatile";
@@ -74,20 +78,39 @@ async function generateCode({ constitution, mission }) {
         throw new Error("Missing AI_API_KEY environment variable.");
     }
 
+    const dbContext = publicSupabaseUrl && publicSupabaseAnonKey
+        ? `
+You have access to a public, read-restricted Supabase project if the mission needs live data or interactivity:
+- Project URL: ${publicSupabaseUrl}
+- Public anon key (safe to use in browser JS, protected by Row Level Security): ${publicSupabaseAnonKey}
+- Load the client via: <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  then: const sb = supabase.createClient("${publicSupabaseUrl}", "${publicSupabaseAnonKey}");
+- Tables you are allowed to read: missions (id, title, description, status), content_queue (id, content_type, content, status).
+- Tables you are allowed to insert into (only if the mission clearly requires it, and only as an authenticated/anonymous user): missions (title, description).
+- Never write raw API keys other than the public anon key above. Never touch service_role keys.
+`
+        : "";
+
     const systemPrompt = `You are acting as the "Coder" role inside the Aegis system.
-Your job: write a small, safe, self-contained HTML/CSS change that implements the approved mission below.
+Your job: write a small, safe, self-contained HTML/CSS/JS change that implements the approved mission below.
 
 You must strictly follow this constitution:
 ${JSON.stringify(constitution, null, 2)}
 
+Here is the CURRENT content of the page you are editing (site-staging/index.html). Base your change on what's actually there — don't duplicate existing sections, and reference real element structure if you need to hook into it:
+---CURRENT PAGE START---
+${currentHtml || "(page is currently empty/minimal)"}
+---CURRENT PAGE END---
+${dbContext}
 Rules:
 - Only output a change that is small, low-risk, and directly implements the mission. Do not invent unrelated features.
+- Your "code" field should contain ONLY the new snippet to insert (HTML/CSS/JS), not the whole page again.
 - If the mission is too vague or risky to implement safely, say so honestly instead of guessing.
 - Never claim the code is tested — it has not been. It goes into a human review queue before anything is deployed.
 
 Respond ONLY with a JSON object, no markdown, no extra text, in this exact shape:
 {
-  "code": "the HTML/CSS snippet or full file content implementing the change",
+  "code": "the HTML/CSS/JS snippet implementing the change",
   "explanation": "1-3 sentences explaining what this code does and where it should go",
   "confidence": "high" | "medium" | "low" | "unknown"
 }`;
