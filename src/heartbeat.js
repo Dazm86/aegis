@@ -6,6 +6,7 @@ const { runCouncil } = require("./core/council");
 const { makeDecision } = require("./core/decision");
 const { recordViolations } = require("./core/enforcer");
 const { runCoder } = require("./core/coder");
+const { runDeployer } = require("./core/deployer");
 const fs = require("fs");
 const path = require("path");
 
@@ -39,12 +40,22 @@ async function main() {
         .maybeSingle();
 
     if (!mission) {
-        console.log("💤 No pending missions. Nothing to do this cycle.");
-        return;
+        console.log("💤 No pending missions this cycle.");
+    } else {
+        console.log(`📌 Processing mission #${mission.id}: ${mission.title}`);
+        await processMission(supabase, mission);
     }
 
-    console.log(`📌 Processing mission #${mission.id}: ${mission.title}`);
+    console.log("🚀 Checking for approved changes to deploy to staging...");
+    const { deployedCount } = await runDeployer(supabase);
+    if (deployedCount > 0) {
+        console.log(`✅ Deployed ${deployedCount} change(s) to site-staging.`);
+    } else {
+        console.log("💤 Nothing new to deploy.");
+    }
+}
 
+async function processMission(supabase, mission) {
     await supabase.from("missions").update({ status: "running" }).eq("id", mission.id);
 
     const { results, violations } = await runCouncil(mission);
