@@ -398,12 +398,19 @@ let authToken = null;
 
 // ---- Auth ----
 async function initAuth() {
-  currentUser = { id: 'owner', email: 'owner@aegis' };
   const { data: { session } } = await sb.auth.getSession();
-  authToken = session?.access_token || '';
-  if (!authToken) {
-    // اگه token نیست، fallback به anon key (RLS بهش اجازه می‌ده read کنه)
-    authToken = 'anon-fallback';
+  if (!session) {
+    const { data, error } = await sb.auth.signInAnonymously();
+    if (error) {
+      console.error('Anonymous sign-in failed:', error.message);
+      authToken = '';
+    } else {
+      authToken = data.session?.access_token || '';
+      currentUser = data.user;
+    }
+  } else {
+    authToken = session.access_token;
+    currentUser = session.user;
   }
   loadAPIs();
   loadQueue();
