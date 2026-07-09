@@ -301,6 +301,7 @@
   <div class="title">AEGIS <span>»</span></div>
   <div class="controls">
     <button class="btn secondary" id="status-indicator">🟢 فعال</button>
+    <button class="btn primary" onclick="triggerHeartbeat()">⚡ اجرای فوری</button>
     <button class="btn freeze" id="freeze-btn" onclick="toggleFreeze()">توقف سیستم</button>
   </div>
 </header>
@@ -314,7 +315,6 @@
     <button class="nav-btn" onclick="showTab('docket', this)">پرونده‌ها</button>
   </nav>
 
-  <!-- Deputy Chat -->
   <div id="deputy-tab" class="tab-content active">
     <div class="grid">
       <div class="panel">
@@ -337,7 +337,6 @@
     </div>
   </div>
 
-  <!-- APIs Management -->
   <div id="apis-tab" class="tab-content">
     <div class="panel">
       <h2>🔑 مدیریت APIs</h2>
@@ -359,7 +358,6 @@
     </div>
   </div>
 
-  <!-- Review Queue -->
   <div id="review-tab" class="tab-content">
     <div class="panel">
       <h2>📋 صف بررسی کدها</h2>
@@ -367,7 +365,6 @@
     </div>
   </div>
 
-  <!-- Docket (Missions) -->
   <div id="docket-tab" class="tab-content">
     <div class="grid">
       <div class="panel">
@@ -402,7 +399,6 @@ async function initAuth() {
   const { data: { session } } = await sb.auth.getSession();
   authToken = session?.access_token || '';
   if (!authToken) {
-    // اگه token نیست، fallback به anon key (RLS بهش اجازه می‌ده read کنه)
     authToken = 'anon-fallback';
   }
   loadAPIs();
@@ -469,7 +465,6 @@ async function sendMessage() {
       messagesDiv.appendChild(clarifyMsg);
     }
     
-    // Update confirmation panel
     const confirmDiv = document.getElementById('mission-confirmation');
     confirmDiv.innerHTML = `
       <div class="card">
@@ -616,6 +611,48 @@ async function rejectCode(id) {
   }
 }
 
+// ---- Mission actions ----
+async function deleteMission(id) {
+  if (!confirm('مطمئنی می‌خوای این ماموریت رو کامل حذف کنی؟')) return;
+  const { error } = await sb.from('missions').delete().eq('id', id);
+  if (error) { alert('خطا: ' + error.message); return; }
+  loadMissions();
+}
+
+async function suspendMission(id) {
+  const { error } = await sb.from('missions').update({ status: 'suspended' }).eq('id', id);
+  if (error) { alert('خطا: ' + error.message); return; }
+  loadMissions();
+}
+
+async function resumeMission(id) {
+  const { error } = await sb.from('missions').update({ status: 'pending' }).eq('id', id);
+  if (error) { alert('خطا: ' + error.message); return; }
+  loadMissions();
+}
+
+async function triggerHeartbeat() {
+  if (!confirm('اجرای فوری شورا رو شروع کنم؟')) return;
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ action: 'trigger_heartbeat' })
+    });
+    const data = await response.json();
+    if (data.success) {
+      alert('✅ اجرا شروع شد، تا ۱ دقیقه دیگه نتیجه رو رفرش کن ببین');
+    } else {
+      alert('❌ خطا: ' + (data.error || 'نامشخص'));
+    }
+  } catch (err) {
+    alert('❌ خطا: ' + err.message);
+  }
+}
+
 // ---- Missions & Docket ----
 async function loadMissions() {
   const { data: missions, error: mErr } = await sb.from('missions').select('*').order('created_at', { ascending: false });
@@ -637,6 +674,12 @@ async function loadMissions() {
           ${dec ? `<span class="badge" style="background:rgba(232,163,61,0.2);color:var(--amber);">امتیاز: ${dec.average_score}</span>` : ''}
           <p style="margin-top:6px;font-size:13px;">${m.description}</p>
           ${vList.length ? `<details><summary>نظرات شورا (${vList.length})</summary><div style="margin-top:6px;font-size:12px;color:var(--muted);">${vList.map(v => `${v.role_id}: ${v.response}`).join('<br/>')}</div></details>` : ''}
+          <div class="actions" style="margin-top:8px;">
+            ${m.status === 'suspended'
+              ? `<button class="approve" onclick="resumeMission(${m.id})">فعال‌سازی مجدد</button>`
+              : `<button class="reject" onclick="suspendMission(${m.id})">تعلیق</button>`}
+            <button class="reject" onclick="deleteMission(${m.id})">حذف</button>
+          </div>
         </div>
       `;
     }).join('');
@@ -667,4 +710,3 @@ setInterval(() => { loadQueue(); loadMissions(); }, 30000);
 
 </body>
 </html>
-
