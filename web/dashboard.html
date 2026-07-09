@@ -309,13 +309,12 @@
 <main>
 
   <nav>
-    <button class="nav-btn active" onclick="showTab('deputy')">معاون</button>
-    <button class="nav-btn" onclick="showTab('apis')">APIs</button>
-    <button class="nav-btn" onclick="showTab('review')">بررسی کدها</button>
-    <button class="nav-btn" onclick="showTab('docket')">پرونده‌ها</button>
+    <button class="nav-btn active" onclick="showTab('deputy', this)">معاون</button>
+    <button class="nav-btn" onclick="showTab('apis', this)">APIs</button>
+    <button class="nav-btn" onclick="showTab('review', this)">بررسی کدها</button>
+    <button class="nav-btn" onclick="showTab('docket', this)">پرونده‌ها</button>
   </nav>
 
-  <!-- Deputy Chat -->
   <div id="deputy-tab" class="tab-content active">
     <div class="grid">
       <div class="panel">
@@ -338,7 +337,6 @@
     </div>
   </div>
 
-  <!-- APIs Management -->
   <div id="apis-tab" class="tab-content">
     <div class="panel">
       <h2>🔑 مدیریت APIs</h2>
@@ -360,7 +358,6 @@
     </div>
   </div>
 
-  <!-- Review Queue -->
   <div id="review-tab" class="tab-content">
     <div class="panel">
       <h2>📋 صف بررسی کدها</h2>
@@ -368,7 +365,6 @@
     </div>
   </div>
 
-  <!-- Docket (Missions) -->
   <div id="docket-tab" class="tab-content">
     <div class="grid">
       <div class="panel">
@@ -403,7 +399,6 @@ async function initAuth() {
   const { data: { session } } = await sb.auth.getSession();
   authToken = session?.access_token || '';
   if (!authToken) {
-    // اگه token نیست، fallback به anon key (RLS بهش اجازه می‌ده read کنه)
     authToken = 'anon-fallback';
   }
   loadAPIs();
@@ -412,11 +407,11 @@ async function initAuth() {
 }
 
 // ---- Tab Navigation ----
-function showTab(tabName) {
+function showTab(tabName, btnElement) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(tabName + '-tab').classList.add('active');
-  event.target.classList.add('active');
+  if(btnElement) btnElement.classList.add('active');
 }
 
 // ---- Freeze System ----
@@ -470,7 +465,6 @@ async function sendMessage() {
       messagesDiv.appendChild(clarifyMsg);
     }
     
-    // Update confirmation panel
     const confirmDiv = document.getElementById('mission-confirmation');
     confirmDiv.innerHTML = `
       <div class="card">
@@ -688,7 +682,6 @@ async function loadMissions() {
           </div>
         </div>
       `;
-      `;
     }).join('');
   }
   
@@ -711,10 +704,10 @@ function escapeHtml(str) {
 }
 
 // Init
+
 initAuth();
 setInterval(() => { loadQueue(); loadMissions(); }, 30000);
 </script>
 
 </body>
 </html>
-
