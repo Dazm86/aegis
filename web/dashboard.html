@@ -301,7 +301,6 @@
   <div class="title">AEGIS <span>»</span></div>
   <div class="controls">
     <button class="btn secondary" id="status-indicator">🟢 فعال</button>
-    <button class="btn primary" onclick="triggerHeartbeat()">⚡ اجرای فوری</button>
     <button class="btn freeze" id="freeze-btn" onclick="toggleFreeze()">توقف سیستم</button>
   </div>
 </header>
@@ -309,10 +308,10 @@
 <main>
 
   <nav>
-    <button class="nav-btn active" onclick="showTab('deputy')">معاون</button>
-    <button class="nav-btn" onclick="showTab('apis')">APIs</button>
-    <button class="nav-btn" onclick="showTab('review')">بررسی کدها</button>
-    <button class="nav-btn" onclick="showTab('docket')">پرونده‌ها</button>
+    <button class="nav-btn active" onclick="showTab('deputy', this)">معاون</button>
+    <button class="nav-btn" onclick="showTab('apis', this)">APIs</button>
+    <button class="nav-btn" onclick="showTab('review', this)">بررسی کدها</button>
+    <button class="nav-btn" onclick="showTab('docket', this)">پرونده‌ها</button>
   </nav>
 
   <!-- Deputy Chat -->
@@ -399,19 +398,12 @@ let authToken = null;
 
 // ---- Auth ----
 async function initAuth() {
+  currentUser = { id: 'owner', email: 'owner@aegis' };
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) {
-    const { data, error } = await sb.auth.signInAnonymously();
-    if (error) {
-      console.error('Anonymous sign-in failed:', error.message);
-      authToken = '';
-    } else {
-      authToken = data.session?.access_token || '';
-      currentUser = data.user;
-    }
-  } else {
-    authToken = session.access_token;
-    currentUser = session.user;
+  authToken = session?.access_token || '';
+  if (!authToken) {
+    // اگه token نیست، fallback به anon key (RLS بهش اجازه می‌ده read کنه)
+    authToken = 'anon-fallback';
   }
   loadAPIs();
   loadQueue();
@@ -419,11 +411,11 @@ async function initAuth() {
 }
 
 // ---- Tab Navigation ----
-function showTab(tabName) {
+function showTab(tabName, btnElement) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(tabName + '-tab').classList.add('active');
-  event.target.classList.add('active');
+  if(btnElement) btnElement.classList.add('active');
 }
 
 // ---- Freeze System ----
@@ -624,48 +616,6 @@ async function rejectCode(id) {
   }
 }
 
-// ---- Mission actions ----
-async function deleteMission(id) {
-  if (!confirm('مطمئنی می‌خوای این ماموریت رو کامل حذف کنی؟')) return;
-  const { error } = await sb.from('missions').delete().eq('id', id);
-  if (error) { alert('خطا: ' + error.message); return; }
-  loadMissions();
-}
-
-async function suspendMission(id) {
-  const { error } = await sb.from('missions').update({ status: 'suspended' }).eq('id', id);
-  if (error) { alert('خطا: ' + error.message); return; }
-  loadMissions();
-}
-
-async function resumeMission(id) {
-  const { error } = await sb.from('missions').update({ status: 'pending' }).eq('id', id);
-  if (error) { alert('خطا: ' + error.message); return; }
-  loadMissions();
-}
-
-async function triggerHeartbeat() {
-  if (!confirm('اجرای فوری شورا رو شروع کنم؟')) return;
-  try {
-    const response = await fetch(EDGE_FUNCTION_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ action: 'trigger_heartbeat' })
-    });
-    const data = await response.json();
-    if (data.success) {
-      alert('✅ اجرا شروع شد، تا ۱ دقیقه دیگه نتیجه رو رفرش کن ببین');
-    } else {
-      alert('❌ خطا: ' + (data.error || 'نامشخص'));
-    }
-  } catch (err) {
-    alert('❌ خطا: ' + err.message);
-  }
-}
-
 // ---- Missions & Docket ----
 async function loadMissions() {
   const { data: missions, error: mErr } = await sb.from('missions').select('*').order('created_at', { ascending: false });
@@ -687,15 +637,7 @@ async function loadMissions() {
           ${dec ? `<span class="badge" style="background:rgba(232,163,61,0.2);color:var(--amber);">امتیاز: ${dec.average_score}</span>` : ''}
           <p style="margin-top:6px;font-size:13px;">${m.description}</p>
           ${vList.length ? `<details><summary>نظرات شورا (${vList.length})</summary><div style="margin-top:6px;font-size:12px;color:var(--muted);">${vList.map(v => `${v.role_id}: ${v.response}`).join('<br/>')}</div></details>` : ''}
-          <div class="actions" style="margin-top:8px;">
-            ${m.status === 'suspended'
-              ? `<button class="approve" onclick="resumeMission(${m.id})">فعال‌سازی مجدد</button>`
-              : `<button class="reject" onclick="suspendMission(${m.id})">تعلیق</button>`}
-            <button class="reject" onclick="deleteMission(${m.id})">حذف</button>
-          </div>
         </div>
-      `; 
-
       `;
     }).join('');
   }
@@ -725,3 +667,4 @@ setInterval(() => { loadQueue(); loadMissions(); }, 30000);
 
 </body>
 </html>
+
