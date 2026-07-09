@@ -21,6 +21,9 @@
   
   <!-- mission #12: ثبت نمره شورا -->
   <script>const sb = supabase.createClient("https://xufbpsdtzrjnwvkpalbu.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODc2NzIsImV4cCI6MjA5ODk2MzY3Mn0.X1EnpBZxrDdFRz6tRxpmOJIyTAEiOXZGG-NHIqTC5p0"); sb.from('missions').select('id, title, description, status').then(data => { console.log(data); const councilScores = data.data.map(council => council.score); councilScores.forEach(score => { const councilElement = document.getElementById(`council-${score.id}`); if (councilElement) { councilElement.innerHTML += ` <span>نمره: ${score.score}</span>`; } }); });</script>
+  
+  <!-- mission #16: افزودن فوتر به صفحه -->
+  <footer style='text-align: center; padding: 10px; background-color: #0B0E14; clear: both; position: relative; bottom: 0; width: 100%;'><p style='color: #E8A33D;'>سیستم Aegis &copy; 2026 <a style='color: #E8A33D;' href='https://github.com/aegis'>GitHub</a> | <a style='color: #E8A33D;' href='/dashboard'>داشبورد</a></p></footer>
   <!-- AEGIS_INSERT_POINT -->
 </body>
 </html>
