@@ -58,7 +58,7 @@ async function main() {
 async function processMission(supabase, mission) {
     await supabase.from("missions").update({ status: "running" }).eq("id", mission.id);
 
-    const { results, violations } = await runCouncil(mission);
+    const { results, violations } = await runCouncil(mission, supabase);
 
     for (const r of results) {
         await supabase.from("council_decisions").insert({
@@ -106,7 +106,7 @@ async function processMission(supabase, mission) {
         }
 
         console.log("🛠️  Running Coder role...");
-        const { result: codeResult, violations: coderViolations } = await runCoder({ constitution, mission });
+        const { result: codeResult, violations: coderViolations } = await runCoder({ constitution, mission, supabase });
 
         if (codeResult.usage) {
             await recordSpend(supabase, codeResult.usage);

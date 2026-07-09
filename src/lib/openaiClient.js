@@ -2,10 +2,10 @@
 // the built-in fetch (no "openai" npm package needed). Defaults to Groq's
 // free-tier endpoint.
 
-async function askRole({ roleName, roleDescription, constitution, mission }) {
-    const apiKey = process.env.AI_API_KEY;
-    const baseURL = process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
-    const model = process.env.AI_MODEL || "llama-3.3-70b-versatile";
+async function askRole({ roleName, roleDescription, constitution, mission, override }) {
+    const apiKey = override?.apiKey || process.env.AI_API_KEY;
+    const baseURL = override?.baseUrl || process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
+    const model = override?.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
 
     if (!apiKey) {
         throw new Error("Missing AI_API_KEY environment variable.");
@@ -69,10 +69,10 @@ Mission description: ${mission.description}`;
     return { ...parsed, usage: data.usage };
 }
 
-async function generateCode({ constitution, mission, currentHtml, publicSupabaseUrl, publicSupabaseAnonKey }) {
-    const apiKey = process.env.AI_API_KEY;
-    const baseURL = process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
-    const model = process.env.AI_MODEL || "llama-3.3-70b-versatile";
+async function generateCode({ constitution, mission, currentHtml, publicSupabaseUrl, publicSupabaseAnonKey, override }) {
+    const apiKey = override?.apiKey || process.env.AI_API_KEY;
+    const baseURL = override?.baseUrl || process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
+    const model = override?.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
 
     if (!apiKey) {
         throw new Error("Missing AI_API_KEY environment variable.");
@@ -102,6 +102,9 @@ Here is the CURRENT content of the page you are editing (site-staging/index.html
 ${currentHtml || "(page is currently empty/minimal)"}
 ---CURRENT PAGE END---
 ${dbContext}
+If the mission needs an image or illustration, you can embed one for free with no API key using:
+<img src="https://image.pollinations.ai/prompt/URL-ENCODED-ENGLISH-DESCRIPTION?width=800&height=500" alt="..." loading="lazy" />
+Replace URL-ENCODED-ENGLISH-DESCRIPTION with a short English description of the desired image, percent-encoded. Only use this if the mission genuinely calls for a visual.
 Rules:
 - Only output a change that is small, low-risk, and directly implements the mission. Do not invent unrelated features.
 - Your "code" field should contain ONLY the new snippet to insert (HTML/CSS/JS), not the whole page again.

@@ -1,8 +1,8 @@
 const fs = require("fs");
 const path = require("path");
-
 const { askRole } = require("../lib/openaiClient");
 const { checkResponse } = require("./enforcer");
+const { getActiveTextKey } = require("../lib/apiKeys");
 
 const modelsConfig = JSON.parse(
     fs.readFileSync(path.join(__dirname, "..", "..", "config", "models.json"), "utf8")
@@ -12,9 +12,14 @@ const constitution = JSON.parse(
     fs.readFileSync(path.join(__dirname, "..", "..", "config", "constitution.json"), "utf8")
 );
 
-async function runCouncil(mission) {
+async function runCouncil(mission, supabase) {
     const results = [];
     const allViolations = [];
+
+    const override = supabase ? await getActiveTextKey(supabase) : null;
+    if (override) {
+        console.log(`🔑 Using stronger override model for council: ${override.model || "(default model for that provider)"}`);
+    }
 
     for (const roleCfg of modelsConfig.roles) {
         if (!roleCfg.enabled) {
@@ -31,7 +36,8 @@ async function runCouncil(mission) {
             roleName: roleInfo.name,
             roleDescription: roleInfo.description,
             constitution,
-            mission
+            mission,
+            override
         });
 
         const violations = checkResponse(roleCfg.roleId, result);

@@ -38,6 +38,45 @@ Deno.serve(async (req) => {
       );
     }
 
+    // --- بخش جدید: اجرای فوری امن گیت‌هاب ---
+    if (action === "trigger_heartbeat") {
+      const ghToken = Deno.env.get("GITHUB_PAT");
+      if (!ghToken) {
+        return new Response(
+          JSON.stringify({ error: "GitHub token not configured" }),
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      const ghRes = await fetch(
+        "https://api.github.com/repos/Dazm86/aegis/actions/workflows/heartbeat.yml/dispatches",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${ghToken}`,
+            "Accept": "application/vnd.github+json",
+            "Content-Type": "application/json",
+            "User-Agent": "Aegis-Edge-Function"
+          },
+          body: JSON.stringify({ ref: "main" }),
+        }
+      );
+
+      if (ghRes.status === 204) {
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: corsHeaders,
+        });
+      } else {
+        const err = await ghRes.text();
+        return new Response(JSON.stringify({ error: err }), {
+          status: ghRes.status,
+          headers: corsHeaders,
+        });
+      }
+    }
+
+    // --- بخش چت معاون شورا ---
     if (action === "chat_deputy") {
       const aiKey = Deno.env.get("AI_API_KEY");
       const aiUrl = Deno.env.get("AI_BASE_URL") || "https://api.groq.com/openai/v1";
@@ -51,13 +90,13 @@ Deno.serve(async (req) => {
       }
 
       const systemPrompt = `You are the Deputy (معاون) in the Aegis system. The Owner is speaking to you directly about ideas for missions. Your job: understand their idea, extract the core mission, and suggest a clear title + description. Be concise, ask clarifying questions if needed, and always respond in Farsi when the Owner writes in Farsi. Respond in JSON:
-{
-  "understanding": "what you understood from their idea",
-  "suggestedTitle": "concise mission title",
-  "suggestedDescription": "1-2 sentence clear description",
-  "needsClarification": false,
-  "clarifyingQuestion": "optional - if needsClarification is true"
-}`;
+      {
+        "understanding": "what you understood from their idea",
+        "suggestedTitle": "concise mission title",
+        "suggestedDescription": "1-2 sentence clear description",
+        "needsClarification": false,
+        "clarifyingQuestion": "optional - if needsClarification is true"
+      }`;
 
       const res = await fetch(`${aiUrl}/chat/completions`, {
         method: "POST",
@@ -99,7 +138,6 @@ Deno.serve(async (req) => {
           clarifyingQuestion: "Could you rephrase your idea?",
         };
       }
-
       return new Response(JSON.stringify(parsed), {
         status: 200,
         headers: corsHeaders,
@@ -117,3 +155,4 @@ Deno.serve(async (req) => {
     );
   }
 });
+
