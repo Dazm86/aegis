@@ -386,6 +386,31 @@ const SUPABASE_URL = "https://xufbpsdtzrjnwvkpalbu.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MzM4NzY3MiwiZXhwIjoyMDk4OTYzNjcyfQ.QJMDHDXPulUqtDPIKoTAObsbE4x2OoeLkdvv1j_vE0A";
 const EDGE_FUNCTION_URL = "https://xufbpsdtzrjnwvkpalbu.supabase.co/functions/v1/chat-deputy";
 
+
+async function triggerHeartbeat() {
+  if (!confirm('آیا مطمئن هستید که می‌خواهید شورا را فوری اجرا کنید؟')) return;
+  
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ action: 'trigger_heartbeat' })
+    });
+    
+    const data = await response.json();
+    if (response.ok && data.success) {
+      alert('✅ دستور اجرا با موفقیت به گیت‌هاب ارسال شد. چرخه سیستم آغاز شد!');
+    } else {
+      alert('❌ خطا در اجرا: ' + (data.error || 'خطای ناشناخته'));
+    }
+  } catch (err) {
+    alert('❌ خطای ارتباطی: ' + err.message);
+  }
+}
+
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 let systemFrozen = false;
@@ -708,6 +733,34 @@ function escapeHtml(str) {
 initAuth();
 setInterval(() => { loadQueue(); loadMissions(); }, 30000);
 </script>
+
+async function triggerImmediateExecution() {
+  const btn = document.getElementById('run-now-btn'); // مطمئن شو آی‌دی دکمه‌ات همین باشد
+  if(btn) btn.disabled = true;
+  
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ action: 'trigger_heartbeat' })
+    });
+    
+    const data = await response.json();
+    if (response.ok && data.success) {
+      alert('🚀 دستور اجرای فوری با موفقیت به گیت‌هاب ارسال شد و چرخه آغاز شد!');
+    } else {
+      alert('❌ خطا در اجرا: ' + (data.error || 'خطای ناشناخته'));
+    }
+  } catch (err) {
+    alert('❌ خطای ارتباطی: ' + err.message);
+  } finally {
+    if(btn) btn.disabled = false;
+  }
+}
+
 
 </body>
 </html>
