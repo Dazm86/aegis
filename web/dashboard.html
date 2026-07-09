@@ -734,32 +734,6 @@ initAuth();
 setInterval(() => { loadQueue(); loadMissions(); }, 30000);
 </script>
 
-async function triggerImmediateExecution() {
-  const btn = document.getElementById('run-now-btn'); // مطمئن شو آی‌دی دکمه‌ات همین باشد
-  if(btn) btn.disabled = true;
-  
-  try {
-    const response = await fetch(EDGE_FUNCTION_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ action: 'trigger_heartbeat' })
-    });
-    
-    const data = await response.json();
-    if (response.ok && data.success) {
-      alert('🚀 دستور اجرای فوری با موفقیت به گیت‌هاب ارسال شد و چرخه آغاز شد!');
-    } else {
-      alert('❌ خطا در اجرا: ' + (data.error || 'خطای ناشناخته'));
-    }
-  } catch (err) {
-    alert('❌ خطای ارتباطی: ' + err.message);
-  } finally {
-    if(btn) btn.disabled = false;
-  }
-}
 
 
 </body>
