@@ -246,6 +246,7 @@
   .badge.pending{background:rgba(232,163,61,0.2);color:var(--amber);}
   .badge.approved{background:rgba(63,167,150,0.2);color:var(--green);}
   .badge.rejected{background:rgba(199,82,75,0.2);color:var(--red);}
+  .badge.owner_override{background:rgba(189,147,249,0.2);color:#bd93f9;}
 
   .code-view{
     background:var(--ink);
@@ -276,6 +277,7 @@
   }
   .actions .approve{background:var(--green);color:var(--ink);}
   .actions .reject{background:var(--red);color:var(--ink);}
+  .actions .override{background:#bd93f9;color:var(--ink);}
 
   .loading{
     color:var(--muted);
@@ -402,7 +404,6 @@ async function initAuth() {
   const { data: { session } } = await sb.auth.getSession();
   authToken = session?.access_token || '';
   if (!authToken) {
-    // اگه token نیست، fallback به anon key (RLS بهش اجازه می‌ده read کنه)
     authToken = 'anon-fallback';
   }
   loadAPIs();
@@ -469,7 +470,6 @@ async function sendMessage() {
       messagesDiv.appendChild(clarifyMsg);
     }
     
-    // Update confirmation panel
     const confirmDiv = document.getElementById('mission-confirmation');
     confirmDiv.innerHTML = `
       <div class="card">
@@ -637,6 +637,16 @@ async function loadMissions() {
           ${dec ? `<span class="badge" style="background:rgba(232,163,61,0.2);color:var(--amber);">امتیاز: ${dec.average_score}</span>` : ''}
           <p style="margin-top:6px;font-size:13px;">${m.description}</p>
           ${vList.length ? `<details><summary>نظرات شورا (${vList.length})</summary><div style="margin-top:6px;font-size:12px;color:var(--muted);">${vList.map(v => `${v.role_id}: ${v.response}`).join('<br/>')}</div></details>` : ''}
+          
+          <div class="actions" style="margin-top:8px;">
+            ${m.status === 'suspended'
+              ? `<button class="approve" onclick="resumeMission(${m.id})">فعال‌سازی مجدد</button>`
+              : `<button class="reject" onclick="suspendMission(${m.id})">تعلیق</button>`}
+            <button class="reject" onclick="deleteMission(${m.id})">حذف</button>
+            ${m.status === 'rejected'
+              ? `<button class="override" onclick="ownerOverride(${m.id})">⚡ دستور مدیر (اجرای اجباری با بررسی ایمنی)</button>`
+              : ''}
+          </div>
         </div>
       `;
     }).join('');
@@ -656,14 +666,29 @@ async function loadMissions() {
   }
 }
 
-function escapeHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// Mission Actions (Suspend, Resume, Delete, Override)
+async function suspendMission(id) {
+  if (!confirm('آیا از تعلیق این ماموریت مطمئن هستید؟')) return;
+  const { error } = await sb.from('missions').update({ status: 'suspended' }).eq('id', id);
+  if (error) alert('خطا: ' + error.message);
+  else loadMissions();
 }
 
-// Init
-initAuth();
-setInterval(() => { loadQueue(); loadMissions(); }, 30000);
-</script>
+async function resumeMission(id) {
+  const { error } = await sb.from('missions').update({ status: 'pending' }).eq('id', id);
+  if (error) alert('خطا: ' + error.message);
+  else loadMissions();
+}
 
-</body>
-</html>
+async function deleteMission(id) {
+  if (!confirm('آیا از حذف این ماموریت مطمئن هستید؟ این کار غیرقابل بازگشت است.')) return;
+  const { error } = await sb.from('missions').delete().eq('id', id);
+  if (error) alert('خطا: ' + error.message);
+  else loadMissions();
+}
+
+async function ownerOverride(id) {
+  if (!confirm('این ماموریت بدون بررسی کامل شورا، فقط با بررسی ایمنی اجرا می‌شه. مطمئنی؟')) return;
+  const { error } = await sb.from('missions').update({ status: 'owner_override' }).eq('id', id);
+  if (error) { alert('خطا: ' + error.message); return; }
+  alert('✅ ثبت شد. دفعه‌ی بعد که شورا اجرا بشه، فقط بررسی ایمنی انجام می‌ده.')
