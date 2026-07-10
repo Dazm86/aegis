@@ -337,24 +337,38 @@
     </div>
   </div>
 
-  <div id="apis-tab" class="tab-content">
+<div id="apis-tab" class="tab-content">
     <div class="panel">
-      <h2>🔑 مدیریت APIs</h2>
+      <h2>🔑 مدیریت مدل هوش مصنوعی قوی‌تر</h2>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+        اگه کلید یک مدل قوی‌تر (OpenAI, DeepSeek, ...) اضافه کنی، شورا و Coder به‌جای Groq پیش‌فرض ازش استفاده می‌کنن. کلیدها امن و رمزگذاری‌شده توی سرور ذخیره می‌شن، نه توی مرورگر.
+      </p>
       <div class="form-row">
-        <label>نام API (برای شناسایی)</label>
-        <input id="api-name" type="text" placeholder="OpenAI, Claude, Custom..." />
+        <label>نام (برای شناسایی خودت)</label>
+        <input id="api-name" type="text" placeholder="مثلاً: OpenAI اصلی" />
+      </div>
+      <div class="form-row">
+        <label>Provider</label>
+        <input id="api-provider" type="text" placeholder="openai, deepseek, custom..." />
       </div>
       <div class="form-row">
         <label>Base URL</label>
-        <input id="api-url" type="text" placeholder="https://api.example.com" />
+        <input id="api-url" type="text" placeholder="https://api.openai.com/v1" />
+      </div>
+      <div class="form-row">
+        <label>مدل</label>
+        <input id="api-model" type="text" placeholder="gpt-4o-mini" />
       </div>
       <div class="form-row">
         <label>API Key</label>
         <input id="api-key" type="password" placeholder="your-api-key-here" />
       </div>
-      <button class="btn primary" onclick="addAPI()" style="width:100%;">اضافه کردن API</button>
-      <h3 style="margin-top:20px;">APIs فعال:</h3>
+      <button class="btn primary" onclick="addAPI()" style="width:100%;">ذخیره‌ی امن API</button>
+      <h3 style="margin-top:20px;">کلیدهای فعال:</h3>
       <div class="api-list" id="api-list"></div>
+      <p style="font-size:11px;color:var(--muted);margin-top:16px;">
+        💡 تولید تصویر رایگان (بدون نیاز به کلید) از قبل برای Coder فعاله.
+      </p>
     </div>
   </div>
 
@@ -383,7 +397,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 const SUPABASE_URL = "https://xufbpsdtzrjnwvkpalbu.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MzM4NzY3MiwiZXhwIjoyMDk4OTYzNjcyfQ.QJMDHDXPulUqtDPIKoTAObsbE4x2OoeLkdvv1j_vE0A";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODc2NzIsImV4cCI6MjA5ODk2MzY3Mn0.X1EnpBZxrDdFRz6tRxpmOJIyTAEiOXZGG-NHIqTC5p0";
 const EDGE_FUNCTION_URL = "https://xufbpsdtzrjnwvkpalbu.supabase.co/functions/v1/chat-deputy";
 
 
@@ -528,53 +542,100 @@ async function createMission() {
   }
 }
 
-// ---- APIs Management ----
-function addAPI() {
+// ---- APIs Management (real, stored securely via Edge Function) ----
+async function addAPI() {
   const name = document.getElementById('api-name').value.trim();
+  const provider = document.getElementById('api-provider').value.trim();
   const url = document.getElementById('api-url').value.trim();
+  const model = document.getElementById('api-model').value.trim();
   const key = document.getElementById('api-key').value.trim();
-  
-  if (!name || !url || !key) {
-    alert('همه فیلدها الزامی هستند');
+
+  if (!name || !provider || !key) {
+    alert('نام، provider و API Key الزامی هستند');
     return;
   }
-  
-  storedAPIs.push({ name, url, key });
-  localStorage.setItem('aegis_apis', JSON.stringify(storedAPIs));
-  
-  document.getElementById('api-name').value = '';
-  document.getElementById('api-url').value = '';
-  document.getElementById('api-key').value = '';
-  
-  renderAPIs();
-  alert('✅ API اضافه شد');
+
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'save_api_key',
+        name, provider, base_url: url, model, api_key: key, purpose: 'text'
+      })
+    });
+    const data = await response.json();
+    if (data.success) {
+      document.getElementById('api-name').value = '';
+      document.getElementById('api-provider').value = '';
+      document.getElementById('api-url').value = '';
+      document.getElementById('api-model').value = '';
+      document.getElementById('api-key').value = '';
+      alert('✅ کلید با موفقیت و امن ذخیره شد');
+      loadAPIs();
+    } else {
+      alert('❌ خطا: ' + (data.error || 'نامشخص'));
+    }
+  } catch (err) {
+    alert('❌ خطای ارتباطی: ' + err.message);
+  }
 }
 
-function removeAPI(index) {
-  storedAPIs.splice(index, 1);
-  localStorage.setItem('aegis_apis', JSON.stringify(storedAPIs));
-  renderAPIs();
+async function removeAPI(id) {
+  if (!confirm('این کلید حذف بشه؟')) return;
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ action: 'delete_api_key', id })
+    });
+    const data = await response.json();
+    if (data.success) {
+      loadAPIs();
+    } else {
+      alert('❌ خطا: ' + (data.error || 'نامشخص'));
+    }
+  } catch (err) {
+    alert('❌ خطای ارتباطی: ' + err.message);
+  }
 }
 
-function loadAPIs() {
-  const stored = localStorage.getItem('aegis_apis');
-  storedAPIs = stored ? JSON.parse(stored) : [];
-  renderAPIs();
+async function loadAPIs() {
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ action: 'list_api_keys' })
+    });
+    const data = await response.json();
+    storedAPIs = data.keys || [];
+    renderAPIs();
+  } catch (err) {
+    console.error('loadAPIs failed:', err.message);
+  }
 }
 
 function renderAPIs() {
   const list = document.getElementById('api-list');
-  list.innerHTML = storedAPIs.map((api, i) => `
+  list.innerHTML = storedAPIs.map((api) => `
     <div class="api-item">
       <div>
-        <strong>${api.name}</strong><br/>
-        <span style="font-size:11px;color:var(--muted);">${api.url}</span>
+        <strong>${api.name}</strong> (${api.provider}${api.model ? ' / ' + api.model : ''})<br/>
+        <span style="font-size:11px;color:var(--muted);">کلید: ${api.masked_key}</span>
       </div>
-      <button onclick="removeAPI(${i})">حذف</button>
+      <button onclick="removeAPI(${api.id})">حذف</button>
     </div>
-  `).join('') || '<p class="loading">هیچ API اضافه نشده</p>';
+  `).join('') || '<p class="loading">هیچ کلیدی اضافه نشده — از Groq پیش‌فرض استفاده می‌شه</p>';
 }
-
 // ---- Review Queue ----
 async function loadQueue() {
   const { data, error } = await sb
