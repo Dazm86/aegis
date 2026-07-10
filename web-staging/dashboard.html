@@ -301,13 +301,6 @@
   <div class="title">AEGIS <span>»</span></div>
   <div class="controls">
     <button class="btn secondary" id="status-indicator">🟢 فعال</button>
-    <div class="form-row" style="margin-top:12px;">
-          <label>این تغییر مربوط به کجاست؟</label>
-          <select id="mission-target" style="width:100%;padding:8px;border-radius:6px;">
-            <option value="site">سایت اصلی</option>
-            <option value="dashboard">پنل مدیریت (این داشبورد) — با احتیاط</option>
-          </select>
-        </div>
     <button class="btn primary" onclick="triggerHeartbeat()">⚡ اجرای فوری</button>
     <button class="btn freeze" id="freeze-btn" onclick="toggleFreeze()">توقف سیستم</button>
   </div>
@@ -528,18 +521,15 @@ async function sendMessage() {
   }
 }
 
-  async function createMission() {
+async function createMission() {
   if (!currentMissionDraft) {
     alert('ابتدا با معاون صحبت کنید');
     return;
   }
-
-  const target = document.getElementById('mission-target').value;
-
+  
   const { error } = await sb.from('missions').insert({
     title: currentMissionDraft.suggestedTitle,
-    description: currentMissionDraft.suggestedDescription,
-    target: target
+    description: currentMissionDraft.suggestedDescription
   });
   
   if (error) {
