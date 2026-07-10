@@ -52,6 +52,8 @@
     display:flex;
     justify-content:space-between;
     align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
     position:sticky;
     top:0;
     background:var(--panel);
@@ -67,6 +69,7 @@
   .controls{
     display:flex;
     gap:10px;
+    flex-wrap:wrap;
   }
   .btn{
     padding:8px 14px;
@@ -103,6 +106,7 @@
     cursor:pointer;
     border-bottom:2px solid transparent;
     font-size:14px;
+    white-space:nowrap;
   }
   nav button.active{
     color:var(--amber);
@@ -211,7 +215,7 @@
     color:var(--muted);
     margin-bottom:4px;
   }
-  .form-row input{
+  .form-row input, .form-row select{
     width:100%;
     background:var(--ink);
     border:1px solid var(--line);
@@ -219,6 +223,7 @@
     padding:8px 10px;
     border-radius:6px;
     font-size:13px;
+    font-family:inherit;
   }
 
   .card{
@@ -244,8 +249,11 @@
     margin-right:6px;
   }
   .badge.pending{background:rgba(232,163,61,0.2);color:var(--amber);}
+  .badge.running{background:rgba(232,163,61,0.2);color:var(--amber);}
+  .badge.owner_override{background:rgba(232,163,61,0.35);color:var(--amber);}
   .badge.approved{background:rgba(63,167,150,0.2);color:var(--green);}
   .badge.rejected{background:rgba(199,82,75,0.2);color:var(--red);}
+  .badge.suspended{background:rgba(136,144,160,0.2);color:var(--muted);}
 
   .code-view{
     background:var(--ink);
@@ -258,15 +266,18 @@
     max-height:150px;
     overflow-y:auto;
     margin:8px 0;
+    white-space:pre-wrap;
   }
 
   .actions{
     display:flex;
     gap:6px;
+    flex-wrap:wrap;
     margin-top:8px;
   }
   .actions button{
     flex:1;
+    min-width:90px;
     padding:6px;
     border:none;
     border-radius:4px;
@@ -298,23 +309,15 @@
 <body>
 
 <header>
-  <div class="title">AEGIS <span>»</span></div>
+  <div class="title">« <span>AEGIS</span></div>
   <div class="controls">
     <button class="btn secondary" id="status-indicator">🟢 فعال</button>
-    <div class="form-row" style="margin-top:12px;">
-          <label>این تغییر مربوط به کجاست؟</label>
-          <select id="mission-target" style="width:100%;padding:8px;border-radius:6px;">
-            <option value="site">سایت اصلی</option>
-            <option value="dashboard">پنل مدیریت (این داشبورد) — با احتیاط</option>
-          </select>
-        </div>
     <button class="btn primary" onclick="triggerHeartbeat()">⚡ اجرای فوری</button>
     <button class="btn freeze" id="freeze-btn" onclick="toggleFreeze()">توقف سیستم</button>
   </div>
 </header>
 
 <main>
-
   <nav>
     <button class="nav-btn active" onclick="showTab('deputy', this)">معاون</button>
     <button class="nav-btn" onclick="showTab('apis', this)">APIs</button>
@@ -322,33 +325,40 @@
     <button class="nav-btn" onclick="showTab('docket', this)">پرونده‌ها</button>
   </nav>
 
+  <!-- Deputy Chat -->
   <div id="deputy-tab" class="tab-content active">
     <div class="grid">
       <div class="panel">
-        <h2>💬 صحبت با معاون</h2>
+        <h2>💬 گفتگو با معاون</h2>
         <div class="chat-box">
           <div class="messages" id="chat-messages"></div>
           <div class="chat-input">
-            <input id="chat-input" type="text" placeholder="ایده‌ی خود را بیان کنید..." onkeypress="if(event.key==='Enter')sendMessage()" />
-            <button onclick="sendMessage()">فرستادن</button>
+            <input id="chat-input" type="text" placeholder="ایده‌ات رو بنویس..." onkeydown="if(event.key==='Enter')sendMessage()" />
+            <button onclick="sendMessage()">ارسال</button>
           </div>
         </div>
       </div>
       <div class="panel">
         <h2>✅ تأیید ایده</h2>
-        <div id="mission-confirmation">
-          <p class="loading">منتظر پیشنهاد...</p>
+        <div id="mission-confirmation"><p class="loading">منتظر پیشنهاد...</p></div>
+        <div class="form-row" style="margin-top:12px;">
+          <label>این تغییر مربوط به کجاست؟</label>
+          <select id="mission-target">
+            <option value="site">سایت اصلی</option>
+            <option value="dashboard">پنل مدیریت (این داشبورد) — با احتیاط</option>
+          </select>
         </div>
         <button class="btn primary" onclick="createMission()" style="width:100%;margin-top:12px;">ایجاد ماموریت</button>
       </div>
     </div>
   </div>
 
-<div id="apis-tab" class="tab-content">
+  <!-- APIs -->
+  <div id="apis-tab" class="tab-content">
     <div class="panel">
       <h2>🔑 مدیریت مدل هوش مصنوعی قوی‌تر</h2>
       <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
-        اگه کلید یک مدل قوی‌تر (OpenAI, DeepSeek, ...) اضافه کنی، شورا و Coder به‌جای Groq پیش‌فرض ازش استفاده می‌کنن. کلیدها امن و رمزگذاری‌شده توی سرور ذخیره می‌شن، نه توی مرورگر.
+        اگه کلید یک مدل قوی‌تر (OpenAI, DeepSeek, Gemini, ...) اضافه کنی، شورا و Coder به‌جای Groq پیش‌فرض ازش استفاده می‌کنن. کلیدها امن توی سرور ذخیره می‌شن، نه توی مرورگر.
       </p>
       <div class="form-row">
         <label>نام (برای شناسایی خودت)</label>
@@ -356,7 +366,7 @@
       </div>
       <div class="form-row">
         <label>Provider</label>
-        <input id="api-provider" type="text" placeholder="openai, deepseek, custom..." />
+        <input id="api-provider" type="text" placeholder="openai, google, deepseek..." />
       </div>
       <div class="form-row">
         <label>Base URL</label>
@@ -371,7 +381,7 @@
         <input id="api-key" type="password" placeholder="your-api-key-here" />
       </div>
       <button class="btn primary" onclick="addAPI()" style="width:100%;">ذخیره‌ی امن API</button>
-      <h3 style="margin-top:20px;">کلیدهای فعال:</h3>
+      <h3 style="margin-top:20px;font-size:14px;">کلیدهای فعال:</h3>
       <div class="api-list" id="api-list"></div>
       <p style="font-size:11px;color:var(--muted);margin-top:16px;">
         💡 تولید تصویر رایگان (بدون نیاز به کلید) از قبل برای Coder فعاله.
@@ -379,6 +389,7 @@
     </div>
   </div>
 
+  <!-- Review Queue -->
   <div id="review-tab" class="tab-content">
     <div class="panel">
       <h2>📋 صف بررسی کدها</h2>
@@ -386,6 +397,7 @@
     </div>
   </div>
 
+  <!-- Docket (Missions) -->
   <div id="docket-tab" class="tab-content">
     <div class="grid">
       <div class="panel">
@@ -407,10 +419,55 @@ const SUPABASE_URL = "https://xufbpsdtzrjnwvkpalbu.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODc2NzIsImV4cCI6MjA5ODk2MzY3Mn0.X1EnpBZxrDdFRz6tRxpmOJIyTAEiOXZGG-NHIqTC5p0";
 const EDGE_FUNCTION_URL = "https://xufbpsdtzrjnwvkpalbu.supabase.co/functions/v1/chat-deputy";
 
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentUser = null;
+let systemFrozen = false;
+let storedAPIs = [];
+let currentMissionDraft = null;
+let authToken = null;
 
+// ---- Auth ----
+async function initAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    const { data, error } = await sb.auth.signInAnonymously();
+    if (error) {
+      authToken = '';
+      console.error('Anonymous sign-in failed:', error.message);
+    } else {
+      authToken = data.session?.access_token || '';
+      currentUser = data.user;
+    }
+  } else {
+    authToken = session.access_token;
+    currentUser = session.user;
+  }
+  loadAPIs();
+  loadQueue();
+  loadMissions();
+}
+
+// ---- Tab Navigation ----
+function showTab(tabName, btnEl) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabName + '-tab').classList.add('active');
+  if (btnEl) btnEl.classList.add('active');
+}
+
+// ---- Freeze System ----
+function toggleFreeze() {
+  systemFrozen = !systemFrozen;
+  document.body.classList.toggle('frozen');
+  const btn = document.getElementById('freeze-btn');
+  btn.textContent = systemFrozen ? '🔓 باز کردن سیستم' : 'توقف سیستم';
+  const indicator = document.getElementById('status-indicator');
+  indicator.textContent = systemFrozen ? '🔴 متوقف' : '🟢 فعال';
+}
+
+// ---- Trigger immediate heartbeat run via GitHub Actions ----
 async function triggerHeartbeat() {
-  if (!confirm('آیا مطمئن هستید که می‌خواهید شورا را فوری اجرا کنید؟')) return;
-  
+  if (!confirm('اجرای فوری شورا رو شروع کنم؟')) return;
   try {
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
@@ -420,7 +477,6 @@ async function triggerHeartbeat() {
       },
       body: JSON.stringify({ action: 'trigger_heartbeat' })
     });
-    
     const data = await response.json();
     if (response.ok && data.success) {
       alert('✅ دستور اجرا با موفقیت به گیت‌هاب ارسال شد. چرخه سیستم آغاز شد!');
@@ -432,58 +488,20 @@ async function triggerHeartbeat() {
   }
 }
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let currentUser = null;
-let systemFrozen = false;
-let storedAPIs = [];
-let currentMissionDraft = null;
-let authToken = null;
-
-// ---- Auth ----
-async function initAuth() {
-  currentUser = { id: 'owner', email: 'owner@aegis' };
-  const { data: { session } } = await sb.auth.getSession();
-  authToken = session?.access_token || '';
-  if (!authToken) {
-    authToken = 'anon-fallback';
-  }
-  loadAPIs();
-  loadQueue();
-  loadMissions();
-}
-
-// ---- Tab Navigation ----
-function showTab(tabName, btnElement) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(tabName + '-tab').classList.add('active');
-  if(btnElement) btnElement.classList.add('active');
-}
-
-// ---- Freeze System ----
-function toggleFreeze() {
-  systemFrozen = !systemFrozen;
-  document.body.classList.toggle('frozen');
-  const btn = document.getElementById('freeze-btn');
-  btn.textContent = systemFrozen ? '🔓 باز کردن سیستم' : '🧊 توقف سیستم';
-  const indicator = document.getElementById('status-indicator');
-  indicator.textContent = systemFrozen ? '🔴 متوقف' : '🟢 فعال';
-}
-
 // ---- Deputy Chat ----
 async function sendMessage() {
   const input = document.getElementById('chat-input');
   const message = input.value.trim();
   if (!message) return;
-  
+
   input.value = '';
-  
+
   const messagesDiv = document.getElementById('chat-messages');
   const userMsg = document.createElement('div');
   userMsg.className = 'message user';
   userMsg.textContent = message;
   messagesDiv.appendChild(userMsg);
-  
+
   try {
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
@@ -493,32 +511,32 @@ async function sendMessage() {
       },
       body: JSON.stringify({ action: 'chat_deputy', message })
     });
-    
+
     if (!response.ok) throw new Error('رابط‌پیام دستیاب نیست');
-    
+
     const data = await response.json();
     currentMissionDraft = data;
-    
+
     const deputyMsg = document.createElement('div');
     deputyMsg.className = 'message deputy';
-    deputyMsg.innerHTML = `<strong>${data.suggestedTitle}</strong><br/>${data.understanding}`;
+    deputyMsg.innerHTML = `<strong>${escapeHtml(data.suggestedTitle || '')}</strong><br/>${escapeHtml(data.understanding || '')}`;
     messagesDiv.appendChild(deputyMsg);
-    
+
     if (data.needsClarification) {
       const clarifyMsg = document.createElement('div');
       clarifyMsg.className = 'message deputy';
-      clarifyMsg.textContent = `❓ ${data.clarifyingQuestion}`;
+      clarifyMsg.textContent = `❓ ${data.clarifyingQuestion || ''}`;
       messagesDiv.appendChild(clarifyMsg);
     }
-    
+
     const confirmDiv = document.getElementById('mission-confirmation');
     confirmDiv.innerHTML = `
       <div class="card">
-        <div class="card-title">${data.suggestedTitle}</div>
-        <div>${data.suggestedDescription}</div>
+        <div class="card-title">${escapeHtml(data.suggestedTitle || '')}</div>
+        <div>${escapeHtml(data.suggestedDescription || '')}</div>
       </div>
     `;
-    
+
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   } catch (err) {
     const errMsg = document.createElement('div');
@@ -528,7 +546,7 @@ async function sendMessage() {
   }
 }
 
-  async function createMission() {
+async function createMission() {
   if (!currentMissionDraft) {
     alert('ابتدا با معاون صحبت کنید');
     return;
@@ -541,13 +559,13 @@ async function sendMessage() {
     description: currentMissionDraft.suggestedDescription,
     target: target
   });
-  
+
   if (error) {
     alert('خطا: ' + error.message);
   } else {
     alert('✅ ماموریت ایجاد شد');
     currentMissionDraft = null;
-    document.getElementById('mission-confirmation').innerHTML = '<p class=\"loading\">منتظر پیشنهاد...</p>';
+    document.getElementById('mission-confirmation').innerHTML = '<p class="loading">منتظر پیشنهاد...</p>';
     loadMissions();
   }
 }
@@ -639,38 +657,39 @@ function renderAPIs() {
   list.innerHTML = storedAPIs.map((api) => `
     <div class="api-item">
       <div>
-        <strong>${api.name}</strong> (${api.provider}${api.model ? ' / ' + api.model : ''})<br/>
-        <span style="font-size:11px;color:var(--muted);">کلید: ${api.masked_key}</span>
+        <strong>${escapeHtml(api.name)}</strong> (${escapeHtml(api.provider)}${api.model ? ' / ' + escapeHtml(api.model) : ''})<br/>
+        <span style="font-size:11px;color:var(--muted);">کلید: ${escapeHtml(api.masked_key)}</span>
       </div>
       <button onclick="removeAPI(${api.id})">حذف</button>
     </div>
   `).join('') || '<p class="loading">هیچ کلیدی اضافه نشده — از Groq پیش‌فرض استفاده می‌شه</p>';
 }
+
 // ---- Review Queue ----
 async function loadQueue() {
   const { data, error } = await sb
     .from('content_queue')
     .select('*')
     .order('created_at', { ascending: false });
-  
+
   const list = document.getElementById('queue-list');
   if (error || !data?.length) {
     list.innerHTML = '<p class="loading">صف خالی است</p>';
     return;
   }
-  
+
   list.innerHTML = data.map(item => {
     let parsed = {};
     try { parsed = JSON.parse(item.content); } catch {}
-    
+
     return `
       <div class="card">
-        <div class="card-title">${parsed.missionTitle || item.content_type}</div>
+        <div class="card-title">${escapeHtml(parsed.missionTitle || item.content_type)}</div>
         <div class="card-meta">
           <span class="badge ${item.status}">${item.status}</span>
-          اطمینان: ${parsed.confidence || '؟'}
+          اطمینان: ${escapeHtml(parsed.confidence || '؟')}
         </div>
-        <p>${parsed.explanation || ''}</p>
+        <p>${escapeHtml(parsed.explanation || '')}</p>
         ${item.status === 'pending_review' ? `
           <div class="code-view">${escapeHtml(parsed.code || '')}</div>
           <div class="actions">
@@ -688,10 +707,12 @@ async function approveCode(id) {
     .from('content_queue')
     .update({ status: 'approved', reviewed_at: new Date().toISOString() })
     .eq('id', id);
-  
+
   if (!error) {
     alert('✅ تأیید شد');
     loadQueue();
+  } else {
+    alert('خطا: ' + error.message);
   }
 }
 
@@ -700,10 +721,12 @@ async function rejectCode(id) {
     .from('content_queue')
     .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
     .eq('id', id);
-  
+
   if (!error) {
     alert('✅ رد شد');
     loadQueue();
+  } else {
+    alert('خطا: ' + error.message);
   }
 }
 
@@ -727,26 +750,12 @@ async function resumeMission(id) {
   loadMissions();
 }
 
-async function triggerHeartbeat() {
-  if (!confirm('اجرای فوری شورا رو شروع کنم؟')) return;
-  try {
-    const response = await fetch(EDGE_FUNCTION_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ action: 'trigger_heartbeat' })
-    });
-    const data = await response.json();
-    if (data.success) {
-      alert('✅ اجرا شروع شد، تا ۱ دقیقه دیگه نتیجه رو رفرش کن ببین');
-    } else {
-      alert('❌ خطا: ' + (data.error || 'نامشخص'));
-    }
-  } catch (err) {
-    alert('❌ خطا: ' + err.message);
-  }
+async function ownerOverride(id) {
+  if (!confirm('این ماموریت بدون بررسی کامل شورا، فقط با بررسی ایمنی اجرا می‌شه. مطمئنی؟')) return;
+  const { error } = await sb.from('missions').update({ status: 'owner_override' }).eq('id', id);
+  if (error) { alert('خطا: ' + error.message); return; }
+  alert('✅ ثبت شد. دفعه‌ی بعد که شورا اجرا بشه، فقط بررسی ایمنی انجام می‌ده.');
+  loadMissions();
 }
 
 // ---- Missions & Docket ----
@@ -754,7 +763,7 @@ async function loadMissions() {
   const { data: missions, error: mErr } = await sb.from('missions').select('*').order('created_at', { ascending: false });
   const { data: decisions, error: dErr } = await sb.from('decisions').select('*');
   const { data: verdicts } = await sb.from('council_decisions').select('*');
-  
+
   const mList = document.getElementById('missions-list');
   if (!missions?.length) {
     mList.innerHTML = '<p class="loading">هیچ ماموریتی ثبت نشده</p>';
@@ -762,25 +771,29 @@ async function loadMissions() {
     mList.innerHTML = missions.map(m => {
       const dec = decisions?.find(d => d.mission_id === m.id);
       const vList = verdicts?.filter(v => v.mission_id === m.id) || [];
-      
+
       return `
         <div class="card">
-          <div class="card-title">${m.title}</div>
+          <div class="card-title">${escapeHtml(m.title)}</div>
           <span class="badge ${m.status}">${m.status}</span>
+          ${m.target === 'dashboard' ? `<span class="badge" style="background:rgba(199,82,75,0.15);color:var(--red);">هدف: داشبورد</span>` : ''}
           ${dec ? `<span class="badge" style="background:rgba(232,163,61,0.2);color:var(--amber);">امتیاز: ${dec.average_score}</span>` : ''}
-          <p style="margin-top:6px;font-size:13px;">${m.description}</p>
-          ${vList.length ? `<details><summary>نظرات شورا (${vList.length})</summary><div style="margin-top:6px;font-size:12px;color:var(--muted);">${vList.map(v => `${v.role_id}: ${v.response}`).join('<br/>')}</div></details>` : ''}
-          <div class="actions" style="margin-top:8px;">
+          <p style="margin-top:6px;font-size:13px;">${escapeHtml(m.description)}</p>
+          ${vList.length ? `<details><summary>نظرات شورا (${vList.length})</summary><div style="margin-top:6px;font-size:12px;color:var(--muted);">${vList.map(v => `${escapeHtml(v.role_id)}: ${escapeHtml(v.response || '')}`).join('<br/>')}</div></details>` : ''}
+          <div class="actions">
             ${m.status === 'suspended'
               ? `<button class="approve" onclick="resumeMission(${m.id})">فعال‌سازی مجدد</button>`
               : `<button class="reject" onclick="suspendMission(${m.id})">تعلیق</button>`}
             <button class="reject" onclick="deleteMission(${m.id})">حذف</button>
+            ${m.status === 'rejected'
+              ? `<button class="approve" onclick="ownerOverride(${m.id})">⚡ دستور مدیر</button>`
+              : ''}
           </div>
         </div>
       `;
     }).join('');
   }
-  
+
   const dList = document.getElementById('decisions-list');
   if (!decisions?.length) {
     dList.innerHTML = '<p class="loading">هیچ تصمیمی اتخاذ نشده</p>';
@@ -790,6 +803,7 @@ async function loadMissions() {
         <div class="card-title">ماموریت #${d.mission_id}</div>
         <span class="badge ${d.approved ? 'approved' : 'rejected'}">${d.approved ? '✅ تأیید' : '❌ رد'}</span>
         <div style="font-size:12px;margin-top:6px;">امتیاز: ${d.average_score} / ${d.threshold}</div>
+        ${d.reasoning ? `<div style="font-size:12px;margin-top:4px;color:var(--muted);">${escapeHtml(d.reasoning)}</div>` : ''}
       </div>
     `).join('');
   }
@@ -799,13 +813,10 @@ function escapeHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-
 // Init
 initAuth();
 setInterval(() => { loadQueue(); loadMissions(); }, 30000);
 </script>
-
-
 
 </body>
 </html>

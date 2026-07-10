@@ -7,6 +7,7 @@ const { makeDecision } = require("./core/decision");
 const { recordViolations } = require("./core/enforcer");
 const { runCoder } = require("./core/coder");
 const { runDeployer } = require("./core/deployer");
+const { runSafetyCheck } = require("./core/safetyCheck");
 const fs = require("fs");
 const path = require("path");
 
@@ -34,7 +35,7 @@ async function main() {
     const { data: mission } = await supabase
         .from("missions")
         .select("*")
-        .eq("status", "pending")
+        .in("status", ["pending", "owner_override"])
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
@@ -44,7 +45,11 @@ async function main() {
     } else {
         console.log(`📌 Processing mission #${mission.id}: ${mission.title}`);
         try {
-            await processMission(supabase, mission);
+            if (mission.status === "owner_override") {
+                await processOwnerOverride(supabase, mission);
+            } else {
+                await processMission(supabase, mission);
+            }
         } catch (err) {
             console.error(`⚠️  Mission #${mission.id} failed: ${err.message}`);
             await supabase.from("missions").update({ status: "pending" }).eq("id", mission.id);
@@ -108,39 +113,77 @@ async function processMission(supabase, mission) {
     console.log("=================================");
 
     if (decision.approved) {
-        const stillWithinBudget = await hasBudgetRemaining(supabase);
-        if (!stillWithinBudget) {
-            console.log("🚫 Budget cap reached before Coder could run. Skipping code generation.");
-            return;
-        }
+        await runCoderAndQueue(supabase, mission);
+    }
+}
 
-        console.log("🛠️  Running Coder role...");
-        const { result: codeResult, violations: coderViolations } = await runCoder({ constitution, mission, supabase });
+async function processOwnerOverride(supabase, mission) {
+    await supabase.from("missions").update({ status: "running" }).eq("id", mission.id);
 
-        if (codeResult.usage) {
-            await recordSpend(supabase, codeResult.usage);
-        }
+    console.log("🛡️  Owner override active - running SAFETY-ONLY check (bypassing normal scoring)...");
 
-        if (coderViolations.length > 0) {
-            await recordViolations(supabase, coderViolations);
-        }
+    const safety = await runSafetyCheck(mission, supabase);
 
-        if (codeResult.code && codeResult.code.trim() !== "") {
-            await supabase.from("content_queue").insert({
-                content_type: "site_update",
-                content: JSON.stringify({
-                    missionId: mission.id,
-                    missionTitle: mission.title,
-                    explanation: codeResult.explanation,
-                    confidence: codeResult.confidence,
-                    code: codeResult.code
-                }),
-                status: "pending_review"
-            });
-            console.log("📥 Code change added to content_queue (status: pending_review).");
-        } else {
-            console.log("⚠️  Coder did not produce code (see violations/logs). Nothing added to queue.");
-        }
+    if (safety.usage) {
+        await recordSpend(supabase, safety.usage);
+    }
+
+    await supabase.from("decisions").insert({
+        mission_id: mission.id,
+        approved: safety.safe,
+        average_score: safety.safe ? 100 : 0,
+        threshold: 0,
+        reasoning: `[دستور مدیر - فقط بررسی ایمنی] ${safety.reasoning}`
+    });
+
+    await supabase
+        .from("missions")
+        .update({ status: safety.safe ? "approved" : "rejected" })
+        .eq("id", mission.id);
+
+    console.log("=================================");
+    console.log(safety.safe ? "✅ Owner override APPROVED (safe)" : "❌ Owner override REJECTED (unsafe)");
+    console.log("Reasoning:", safety.reasoning);
+    console.log("=================================");
+
+    if (safety.safe) {
+        await runCoderAndQueue(supabase, mission);
+    }
+}
+
+async function runCoderAndQueue(supabase, mission) {
+    const stillWithinBudget = await hasBudgetRemaining(supabase);
+    if (!stillWithinBudget) {
+        console.log("🚫 Budget cap reached before Coder could run. Skipping code generation.");
+        return;
+    }
+
+    console.log("🛠️  Running Coder role...");
+    const { result: codeResult, violations: coderViolations } = await runCoder({ constitution, mission, supabase });
+
+    if (codeResult.usage) {
+        await recordSpend(supabase, codeResult.usage);
+    }
+
+    if (coderViolations.length > 0) {
+        await recordViolations(supabase, coderViolations);
+    }
+
+    if (codeResult.code && codeResult.code.trim() !== "") {
+        await supabase.from("content_queue").insert({
+            content_type: "site_update",
+            content: JSON.stringify({
+                missionId: mission.id,
+                missionTitle: mission.title,
+                explanation: codeResult.explanation,
+                confidence: codeResult.confidence,
+                code: codeResult.code
+            }),
+            status: "pending_review"
+        });
+        console.log("📥 Code change added to content_queue (status: pending_review).");
+    } else {
+        console.log("⚠️  Coder did not produce code (see violations/logs). Nothing added to queue.");
     }
 }
 

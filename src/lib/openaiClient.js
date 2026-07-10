@@ -160,4 +160,71 @@ Mission description: ${mission.description}`;
     return { ...parsed, usage: data.usage };
 }
 
-module.exports = { askRole, generateCode };
+async function checkSafety({ mission, override }) {
+    const apiKey = override?.apiKey || process.env.AI_API_KEY;
+    const baseURL = override?.baseUrl || process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
+    const model = override?.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
+
+    if (!apiKey) {
+        throw new Error("Missing AI_API_KEY environment variable.");
+    }
+
+    const systemPrompt = `You are performing an OWNER OVERRIDE safety check inside the Aegis system.
+The Owner has manually decided to bypass the normal council scoring for this mission and force it through -
+BUT ONLY if it is safe. Your ONLY job is to assess safety, not usefulness, style, or quality.
+
+Answer "unsafe" (safe: false) if the mission, if implemented, could plausibly:
+- delete, overwrite, or corrupt existing files or content
+- break the site (invalid structure, broken layout, infinite loops, crashes)
+- expose secrets, API keys, or credentials
+- allow unauthorized database writes/deletes beyond the missions table
+- introduce a security vulnerability (XSS, injection, unsafe external scripts)
+
+Otherwise answer "safe" (safe: true), even if the idea is vague, low-value, or not well justified -
+usefulness is NOT your concern here, only safety.
+
+Respond ONLY with a JSON object, no markdown, no extra text:
+{
+  "safe": true | false,
+  "reasoning": "1-2 sentences explaining the safety verdict"
+}`;
+
+    const userPrompt = `Mission title: ${mission.title}
+Mission description: ${mission.description}`;
+
+    const res = await fetch(`${baseURL}/chat/completions`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            model,
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt }
+            ],
+            temperature: 0.1
+        })
+    });
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`AI API request failed (${res.status}): ${errorText}`);
+    }
+
+    const data = await res.json();
+    let raw = data.choices[0].message.content.trim();
+    raw = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+
+    let parsed;
+    try {
+        parsed = JSON.parse(raw);
+    } catch (err) {
+        parsed = { safe: false, reasoning: "Safety checker failed to return valid structured output; defaulting to unsafe." };
+    }
+
+    return { ...parsed, usage: data.usage };
+}
+
+module.exports = { askRole, generateCode, checkSafety };
