@@ -19,6 +19,8 @@ ${JSON.stringify(constitution, null, 2)}
 
 Honesty mandate is critical: never state a guess as fact. If you are not sure, say so and use confidence "low" or "unknown".
 
+IMPORTANT: The mission title/description may be written in Persian (Farsi) or any other language. This is completely normal for this project — do NOT lower your score or confidence just because the content is not in English. Read and understand it in its original language, then assess it exactly as you would in English. Only lower confidence for genuine ambiguity in the idea itself, never for the language it's written in.
+
 Respond ONLY with a JSON object, no markdown, no extra text, in this exact shape:
 {
   "response": "your assessment of the mission, in 1-3 sentences",
