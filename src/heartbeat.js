@@ -52,7 +52,14 @@ async function main() {
             }
         } catch (err) {
             console.error(`⚠️  Mission #${mission.id} failed: ${err.message}`);
-            await supabase.from("missions").update({ status: "pending" }).eq("id", mission.id);
+            const { data: current } = await supabase
+                .from("missions")
+                .select("status")
+                .eq("id", mission.id)
+                .maybeSingle();
+            if (current && current.status === "running") {
+                await supabase.from("missions").update({ status: "pending" }).eq("id", mission.id);
+            }
             await supabase.from("audit_log").insert({
                 event_type: "mission_processing_error",
                 payload: { missionId: mission.id, error: err.message }
