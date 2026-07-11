@@ -20,7 +20,18 @@ async function main() {
     console.log("🧬 Aegis Heartbeat Starting...");
     console.log("=================================");
 
-    const supabase = getSupabaseClient();
+const supabase = getSupabaseClient();
+
+    const { data: freezeState } = await supabase
+        .from("system_state")
+        .select("value")
+        .eq("key", "frozen")
+        .maybeSingle();
+
+    if (freezeState && freezeState.value === true) {
+        console.log("🧊 System is frozen by owner. Skipping this run entirely.");
+        return;
+    }
 
     const withinBudget = await hasBudgetRemaining(supabase);
     if (!withinBudget) {
@@ -36,6 +47,7 @@ async function main() {
         .from("missions")
         .select("*")
         .in("status", ["pending", "owner_override"])
+        .order("priority", { ascending: false })
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
