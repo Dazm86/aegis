@@ -314,6 +314,7 @@
     <button class="btn secondary" id="status-indicator">🟢 فعال</button>
     <button class="btn primary" onclick="triggerHeartbeat()">⚡ اجرای فوری</button>
     <button class="btn freeze" id="freeze-btn" onclick="toggleFreeze()">توقف سیستم</button>
+    <button class="btn secondary" onclick="doLogout()">خروج</button>
   </div>
 </header>
 
@@ -419,6 +420,8 @@ const SUPABASE_URL = "https://xufbpsdtzrjnwvkpalbu.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODc2NzIsImV4cCI6MjA5ODk2MzY3Mn0.X1EnpBZxrDdFRz6tRxpmOJIyTAEiOXZGG-NHIqTC5p0";
 const EDGE_FUNCTION_URL = "https://xufbpsdtzrjnwvkpalbu.supabase.co/functions/v1/chat-deputy";
 
+const OWNER_UID = "29b257e4-5ea6-4bb8-9920-fb8c222e6bd9";
+
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 let systemFrozen = false;
@@ -426,22 +429,68 @@ let storedAPIs = [];
 let currentMissionDraft = null;
 let authToken = null;
 
-// ---- Auth ----
+// ---- Auth (real login, owner only) ----
 async function initAuth() {
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) {
-    const { data, error } = await sb.auth.signInAnonymously();
-    if (error) {
-      authToken = '';
-      console.error('Anonymous sign-in failed:', error.message);
-    } else {
-      authToken = data.session?.access_token || '';
-      currentUser = data.user;
-    }
-  } else {
+  if (session && session.user?.id === OWNER_UID) {
     authToken = session.access_token;
     currentUser = session.user;
+    showApp();
+    return;
   }
+  showLoginGate();
+}
+
+function showLoginGate() {
+  document.body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
+      <div class="panel" style="max-width:360px;width:100%;">
+        <h2>🔒 ورود مدیر سیستم</h2>
+        <div class="form-row">
+          <label>ایمیل</label>
+          <input id="login-email" type="email" placeholder="you@example.com" />
+        </div>
+        <div class="form-row">
+          <label>رمز عبور</label>
+          <input id="login-password" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+        </div>
+        <div id="login-error" style="color:var(--red);font-size:12px;margin-bottom:10px;"></div>
+        <button class="btn primary" onclick="doLogin()" style="width:100%;">ورود</button>
+      </div>
+    </div>
+  `;
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errorDiv = document.getElementById('login-error');
+  errorDiv.textContent = '';
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    errorDiv.textContent = 'خطا: ' + error.message;
+    return;
+  }
+
+  if (data.user?.id !== OWNER_UID) {
+    errorDiv.textContent = 'این حساب اجازه‌ی دسترسی به این پنل را ندارد.';
+    await sb.auth.signOut();
+    return;
+  }
+
+  authToken = data.session.access_token;
+  currentUser = data.user;
+  location.reload();
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+function showApp() {
   loadAPIs();
   loadQueue();
   loadMissions();
