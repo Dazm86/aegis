@@ -179,8 +179,10 @@ async function runCoderAndQueue(supabase, mission) {
                 confidence: codeResult.confidence,
                 code: codeResult.code
             }),
-            status: "pending_review"
+            status: "pending_review",
+            target: mission.target === "dashboard" ? "dashboard" : "site"
         });
+
         console.log("📥 Code change added to content_queue (status: pending_review).");
     } else {
         console.log("⚠️  Coder did not produce code (see violations/logs). Nothing added to queue.");

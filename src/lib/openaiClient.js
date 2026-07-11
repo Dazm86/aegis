@@ -71,7 +71,7 @@ Mission description: ${mission.description}`;
     return { ...parsed, usage: data.usage };
 }
 
-async function generateCode({ constitution, mission, currentHtml, publicSupabaseUrl, publicSupabaseAnonKey, override }) {
+async function generateCode({ constitution, mission, currentHtml, publicSupabaseUrl, publicSupabaseAnonKey, override, isDashboard }) {
     const apiKey = override?.apiKey || process.env.AI_API_KEY;
     const baseURL = override?.baseUrl || process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
     const model = override?.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
@@ -107,6 +107,15 @@ ${dbContext}
 If the mission needs an image or illustration, you can embed one for free with no API key using:
 <img src="https://image.pollinations.ai/prompt/URL-ENCODED-ENGLISH-DESCRIPTION?width=800&height=500" alt="..." loading="lazy" />
 Replace URL-ENCODED-ENGLISH-DESCRIPTION with a short English description of the desired image, percent-encoded. Only use this if the mission genuinely calls for a visual.
+${isDashboard ? `
+⚠️ CRITICAL: This mission targets the OWNER'S CONTROL PANEL (a staging copy of it), not the public site.
+This page contains the Owner's only tools to control the whole system (approve/reject code, freeze the system,
+chat with the Deputy, manage API keys). Extreme caution is required:
+- NEVER modify, remove, or interfere with existing <script> logic, function names, element IDs, or the Supabase client setup.
+- NEVER touch or duplicate the authentication (initAuth), tab navigation (showTab), or freeze system logic.
+- Only ADD new, clearly isolated, purely additive UI (e.g. a new small panel, a new read-only info widget) that cannot break existing functionality.
+- If you cannot implement the mission with near-zero risk of breaking the control panel, set confidence to "low" and explain why in your response instead of guessing.
+` : ''}
 Rules:
 - Only output a change that is small, low-risk, and directly implements the mission. Do not invent unrelated features.
 - Your "code" field should contain ONLY the new snippet to insert (HTML/CSS/JS), not the whole page again.

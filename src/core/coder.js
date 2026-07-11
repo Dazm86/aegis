@@ -4,12 +4,19 @@ const { generateCode } = require("../lib/openaiClient");
 const { getActiveTextKey } = require("../lib/apiKeys");
 
 const VALID_CONFIDENCE = ["high", "medium", "low", "unknown"];
-const STAGING_FILE = path.join(__dirname, "..", "..", "site-staging", "index.html");
+
+const TARGET_FILES = {
+    site: path.join(__dirname, "..", "..", "site-staging", "index.html"),
+    dashboard: path.join(__dirname, "..", "..", "web-staging", "dashboard.html")
+};
 
 async function runCoder({ constitution, mission, supabase }) {
+    const target = mission.target === "dashboard" ? "dashboard" : "site";
+    const stagingFile = TARGET_FILES[target];
+
     let currentHtml = "";
     try {
-        currentHtml = fs.readFileSync(STAGING_FILE, "utf8");
+        currentHtml = fs.readFileSync(stagingFile, "utf8");
     } catch {
         currentHtml = "";
     }
@@ -19,13 +26,18 @@ async function runCoder({ constitution, mission, supabase }) {
         console.log(`🔑 Using stronger override model for Coder: ${override.model || "(default model for that provider)"}`);
     }
 
+    if (target === "dashboard") {
+        console.log("⚠️  This mission targets the OWNER'S CONTROL PANEL (staging copy). Extra caution applies.");
+    }
+
     const result = await generateCode({
         constitution,
         mission,
         currentHtml,
         publicSupabaseUrl: process.env.SUPABASE_URL,
         publicSupabaseAnonKey: process.env.PUBLIC_SUPABASE_ANON_KEY,
-        override
+        override,
+        isDashboard: target === "dashboard"
     });
 
     const violations = [];
@@ -46,7 +58,7 @@ async function runCoder({ constitution, mission, supabase }) {
         });
     }
 
-    return { result, violations };
+    return { result, violations, target };
 }
 
 module.exports = { runCoder };

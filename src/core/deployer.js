@@ -1,8 +1,12 @@
 const fs = require("fs");
 const path = require("path");
 
-const STAGING_FILE = path.join(__dirname, "..", "..", "site-staging", "index.html");
 const INSERT_MARKER = "<!-- AEGIS_INSERT_POINT -->";
+
+const TARGET_FILES = {
+    site: path.join(__dirname, "..", "..", "site-staging", "index.html"),
+    dashboard: path.join(__dirname, "..", "..", "web-staging", "dashboard.html")
+};
 
 async function runDeployer(supabase) {
     const { data: approvedItems, error } = await supabase
@@ -20,8 +24,8 @@ async function runDeployer(supabase) {
         return { deployedCount: 0 };
     }
 
-    let html = fs.readFileSync(STAGING_FILE, "utf8");
     let deployedCount = 0;
+    const htmlByTarget = {};
 
     for (const item of approvedItems) {
         let parsed;
@@ -33,8 +37,25 @@ async function runDeployer(supabase) {
 
         if (!parsed.code || parsed.code.trim() === "") continue;
 
+        const target = item.target === "dashboard" ? "dashboard" : "site";
+        const filePath = TARGET_FILES[target];
+
+        if (!(target in htmlByTarget)) {
+            try {
+                htmlByTarget[target] = fs.readFileSync(filePath, "utf8");
+            } catch (err) {
+                console.error(`⚠️  Could not read staging file for target "${target}": ${err.message}`);
+                continue;
+            }
+        }
+
+        if (!htmlByTarget[target].includes(INSERT_MARKER)) {
+            console.error(`⚠️  No insert marker found in staging file for target "${target}". Skipping item #${item.id}.`);
+            continue;
+        }
+
         const block = `\n  <!-- mission #${parsed.missionId}: ${parsed.missionTitle || ""} -->\n  ${parsed.code}\n  ${INSERT_MARKER}`;
-        html = html.replace(INSERT_MARKER, block);
+        htmlByTarget[target] = htmlByTarget[target].replace(INSERT_MARKER, block);
         deployedCount++;
 
         await supabase
@@ -43,9 +64,9 @@ async function runDeployer(supabase) {
             .eq("id", item.id);
     }
 
-    if (deployedCount > 0) {
-        fs.writeFileSync(STAGING_FILE, html, "utf8");
-        console.log(`🚀 Deployer applied ${deployedCount} change(s) to site-staging/index.html`);
+    for (const target of Object.keys(htmlByTarget)) {
+        fs.writeFileSync(TARGET_FILES[target], htmlByTarget[target], "utf8");
+        console.log(`🚀 Deployer applied change(s) to ${target === "dashboard" ? "web-staging/dashboard.html" : "site-staging/index.html"}`);
     }
 
     return { deployedCount };
