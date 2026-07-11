@@ -655,7 +655,11 @@ async function sendMessage() {
       body: JSON.stringify({ action: 'chat_deputy', message })
     });
 
-    if (!response.ok) throw new Error('رابط‌پیام دستیاب نیست');
+    if (!response.ok) {
+      let bodyText = '';
+      try { bodyText = await response.text(); } catch {}
+      throw new Error(`کد ${response.status} - ${bodyText || 'بدون جزئیات'}`);
+    }
 
     const data = await response.json();
     currentMissionDraft = data;
