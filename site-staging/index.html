@@ -71,6 +71,12 @@ function searchCodes(query) {
   });
 }
 </script>
+  
+  <!-- mission #27: گزارش و گفتگوی معاون -->
+  <section id='deputy-report'><h2>گزارش معاون</h2><p id='project-status'></p><script>const sb = supabase.createClient('https://xufbpsdtzrjnwvkpalbu.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODc2NzIsImV4cCI6MjA5ODk2MzY3Mn0.X1EnpBZxrDdFRz6tRxpmOJIyTAEiOXZGG-NHIqTC5p0'); sb.from('missions').select('id, title, description, status').then(data => { const projectStatus = data.data.map(mission => mission.status).join(', '); document.getElementById('project-status').innerHTML = `وضعیت پروژه: ${projectStatus}`; });</script></section>
+  
+  <!-- mission #28: ایده‌پردازی برای رسیدن به اهداف سایت -->
+  <section id='idea-section'><h2>ایده‌پردازی برای رسیدن به اهداف سایت</h2><ul id='ideas-list'></ul><input id='new-idea' type='text' placeholder='ایده جدید'><button id='add-idea'>افزودن</button></section><script>const ideasList = document.getElementById('ideas-list'); const newIdeaInput = document.getElementById('new-idea'); const addIdeaButton = document.getElementById('add-idea'); addIdeaButton.addEventListener('click', () => { const newIdea = newIdeaInput.value; if (newIdea) { const li = document.createElement('li'); li.textContent = newIdea; ideasList.appendChild(li); newIdeaInput.value = ''; } });</script>
   <!-- AEGIS_INSERT_POINT -->
 </body>
 </html>
