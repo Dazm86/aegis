@@ -38,7 +38,7 @@ jobs:
         run: |
           git config user.name "Aegis Bot"
           git config user.email "aegis-bot@users.noreply.github.com"
-          git add site-staging/
+          git add site-staging/ web-staging/ site/
           if ! git diff --cached --quiet; then
             git commit -m "Deployer: apply approved changes to staging"
             git push

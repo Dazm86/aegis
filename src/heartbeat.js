@@ -9,6 +9,7 @@ const { runCoder } = require("./core/coder");
 const { runDeployer } = require("./core/deployer");
 const { runSafetyCheck } = require("./core/safetyCheck");
 const { maybeGenerateIdea } = require("./core/ideaGenerator");
+const { maybePromoteToProduction } = require("./core/promoter");
 const fs = require("fs");
 const path = require("path");
 
@@ -96,6 +97,18 @@ if (!mission) {
         console.log(`✅ Deployed ${deployedCount} change(s) to site-staging.`);
     } else {
         console.log("💤 Nothing new to deploy.");
+    }
+
+    console.log("🏗️  Checking if stable staging changes are ready for production...");
+    try {
+        const promotionResult = await maybePromoteToProduction(supabase);
+        if (promotionResult.promoted) {
+            console.log(`🚀 Promoted ${promotionResult.count} change(s) from staging to production!`);
+        } else {
+            console.log(`🕓 Not promoting yet: ${promotionResult.reason}`);
+        }
+    } catch (err) {
+        console.error(`⚠️  Promotion check failed: ${err.message}`);
     }
 }
 

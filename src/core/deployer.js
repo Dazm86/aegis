@@ -60,7 +60,7 @@ async function runDeployer(supabase) {
 
         await supabase
             .from("content_queue")
-            .update({ deployed: true })
+            .update({ deployed: true, deployed_at: new Date().toISOString() })
             .eq("id", item.id);
     }
 
