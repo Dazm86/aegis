@@ -38,6 +38,9 @@
   
   <!-- mission #33: افزودن بخش اخبار و به‌روزرسانی‌ها -->
   <section id='news-section'><h2>اخبار و به‌روزرسانی‌ها</h2><ul id='news-feed'></ul></section><script>const sb = supabase.createClient('https://xufbpsdtzrjnwvkpalbu.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODc2NzIsImV4cCI6MjA5ODk2MzY3Mn0.X1EnpBZxrDdFRz6tRxpmOJIyTAEiOXZGG-NHIqTC5p0'); sb.from('missions').select('id, title, description, status').then(data => { const newsFeed = data.data.map(mission => `<li>${mission.title} - ${mission.description}</li>`).join(''); document.getElementById('news-feed').innerHTML = newsFeed; });</script>
+  
+  <!-- mission #34: افزودن معرفی صوتی -->
+  <button onclick='aegisSpeak("این محیط آزمایشی (staging) است. تغییرات تأییدشده پس از عبور از محیط آزمایشی، اینجا اعمال می‌شوند.", "fa-IR")' style='background-color: #E8A33D; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer;'>🔊 پخش صدا</button><script>function aegisSpeak(text, lang) { const utterance = new SpeechSynthesisUtterance(text); utterance.lang = lang || 'fa-IR'; speechSynthesis.speak(utterance); }</script>
   <!-- AEGIS_INSERT_POINT -->
 </body>
 </html>
