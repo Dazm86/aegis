@@ -239,4 +239,74 @@ Mission description: ${mission.description}`;
     return { ...parsed, usage: data.usage };
 }
 
-module.exports = { askRole, generateCode, checkSafety };
+async function generateIdea({ constitution, history, currentHtml, override }) {
+    const apiKey = override?.apiKey || process.env.AI_API_KEY;
+    const baseURL = override?.baseUrl || process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
+    const model = override?.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
+
+    if (!apiKey) {
+        throw new Error("Missing AI_API_KEY environment variable.");
+    }
+
+    const systemPrompt = `You are the "Idea Generator" inside the Aegis system. The Owner's queue is currently empty,
+so you have been asked to propose ONE new mission idea on your own initiative to improve the public website.
+
+You must strictly follow this constitution:
+${JSON.stringify(constitution, null, 2)}
+${history ? `\n${history}\n` : ""}
+Here is the CURRENT content of the site (site-staging/index.html) so you don't propose something that already exists:
+---CURRENT PAGE START---
+${currentHtml || "(page is currently empty/minimal)"}
+---CURRENT PAGE END---
+
+Rules:
+- Propose exactly ONE small, safe, low-risk, genuinely useful idea - not vague, not a repeat of something already on the page or previously rejected for being too vague.
+- Prefer concrete, specific ideas (a specific new section, a specific visual improvement, a specific small interactive feature) over generic ones like "improve the homepage".
+- Write the title and description in Persian (Farsi), since that's the project's working language.
+- Never propose anything involving the owner's control panel/dashboard, secrets, credentials, or destructive actions.
+- Be honest in your confidence: if you're not sure this is a good idea, say so.
+
+Respond ONLY with a JSON object, no markdown, no extra text:
+{
+  "title": "short mission title in Persian",
+  "description": "1-2 sentence clear description in Persian",
+  "reasoning": "1 sentence in Persian explaining why you picked this idea now",
+  "confidence": "high" | "medium" | "low" | "unknown"
+}`;
+
+    const res = await fetch(`${baseURL}/chat/completions`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            model,
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: "Propose your idea now." }
+            ],
+            temperature: 0.6
+        })
+    });
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`AI API request failed (${res.status}): ${errorText}`);
+    }
+
+    const data = await res.json();
+    let raw = data.choices[0].message.content.trim();
+    raw = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+
+    let parsed;
+    try {
+        parsed = JSON.parse(raw);
+    } catch (err) {
+        parsed = { title: "", description: "", reasoning: "Idea generator failed to return valid structured output.", confidence: "unknown" };
+    }
+
+    return { ...parsed, usage: data.usage };
+}
+
+module.exports = { askRole, generateCode, checkSafety, generateIdea };

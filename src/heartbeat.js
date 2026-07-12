@@ -8,6 +8,7 @@ const { recordViolations } = require("./core/enforcer");
 const { runCoder } = require("./core/coder");
 const { runDeployer } = require("./core/deployer");
 const { runSafetyCheck } = require("./core/safetyCheck");
+const { maybeGenerateIdea } = require("./core/ideaGenerator");
 const fs = require("fs");
 const path = require("path");
 
@@ -52,8 +53,18 @@ const supabase = getSupabaseClient();
         .limit(1)
         .maybeSingle();
 
-    if (!mission) {
+if (!mission) {
         console.log("💤 No pending missions this cycle.");
+        try {
+            const ideaResult = await maybeGenerateIdea(supabase);
+            if (ideaResult.generated) {
+                console.log(`🧠 Self-generated a new idea: "${ideaResult.title}" (mission #${ideaResult.missionId})`);
+            } else {
+                console.log(`🧠 Skipped idea generation: ${ideaResult.reason}`);
+            }
+        } catch (err) {
+            console.error(`⚠️  Idea generation failed: ${err.message}`);
+        }
     } else {
         console.log(`📌 Processing mission #${mission.id}: ${mission.title}`);
         try {
