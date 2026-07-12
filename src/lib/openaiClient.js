@@ -107,6 +107,14 @@ ${dbContext}
 If the mission needs an image or illustration, you can embed one for free with no API key using:
 <img src="https://image.pollinations.ai/prompt/URL-ENCODED-ENGLISH-DESCRIPTION?width=800&height=500" alt="..." loading="lazy" />
 Replace URL-ENCODED-ENGLISH-DESCRIPTION with a short English description of the desired image, percent-encoded. Only use this if the mission genuinely calls for a visual.
+
+If the mission needs spoken audio/narration, you can use the browser's built-in text-to-speech (free, no API key, no external service, works instantly):
+function aegisSpeak(text, lang) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = lang || 'fa-IR';
+  speechSynthesis.speak(utterance);
+}
+Attach this to a button click (e.g. a "🔊 پخش صدا" button calling aegisSpeak('...text...', 'fa-IR')) rather than auto-playing on page load, since browsers block/annoy users with autoplay audio without a user gesture. Use lang 'fa-IR' for Persian text, 'en-US' for English text. Only use this if the mission genuinely calls for spoken/narrated content. Note: this plays live in the visitor's browser using their device's voice; it does not produce a downloadable audio file, and voice quality depends on the visitor's device/OS.
 ${isDashboard ? `
 ⚠️ CRITICAL: This mission targets the OWNER'S CONTROL PANEL (a staging copy of it), not the public site.
 This page contains the Owner's only tools to control the whole system (approve/reject code, freeze the system,
