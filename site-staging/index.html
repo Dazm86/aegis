@@ -35,6 +35,9 @@
   
   <!-- mission #32: بهینه‌سازی صفحه اصلی سایت -->
   <style>body { font-family: system-ui, sans-serif; background: #0B0E14; color: #E8E6DE; margin: 0; padding: 40px 20px; } h1 { color: #E8A33D; } .welcome-message { font-size: 18px; margin-bottom: 20px; } .main-content { display: flex; flex-direction: column; align-items: center; }</style><h1>Aegis</h1><p class='welcome-message'>این محیط آزمایشی (staging) است. تغییرات تأییدشده پس از عبور از محیط آزمایشی، اینجا اعمال می‌شوند.</p><div class='main-content'></div>
+  
+  <!-- mission #33: افزودن بخش اخبار و به‌روزرسانی‌ها -->
+  <section id='news-section'><h2>اخبار و به‌روزرسانی‌ها</h2><ul id='news-feed'></ul></section><script>const sb = supabase.createClient('https://xufbpsdtzrjnwvkpalbu.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODc2NzIsImV4cCI6MjA5ODk2MzY3Mn0.X1EnpBZxrDdFRz6tRxpmOJIyTAEiOXZGG-NHIqTC5p0'); sb.from('missions').select('id, title, description, status').then(data => { const newsFeed = data.data.map(mission => `<li>${mission.title} - ${mission.description}</li>`).join(''); document.getElementById('news-feed').innerHTML = newsFeed; });</script>
   <!-- AEGIS_INSERT_POINT -->
 </body>
 </html>
