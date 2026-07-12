@@ -2,7 +2,7 @@
 // the built-in fetch (no "openai" npm package needed). Defaults to Groq's
 // free-tier endpoint.
 
-async function askRole({ roleName, roleDescription, constitution, mission, override }) {
+async function askRole({ roleName, roleDescription, constitution, mission, override, history }) {
     const apiKey = override?.apiKey || process.env.AI_API_KEY;
     const baseURL = override?.baseUrl || process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
     const model = override?.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
@@ -16,7 +16,7 @@ Role description: ${roleDescription}
 
 You must strictly follow this constitution:
 ${JSON.stringify(constitution, null, 2)}
-
+${history ? `\n${history}\nUse this history to inform your judgment (e.g. if similar missions failed before for a specific reason, weigh that; if similar missions succeeded, that's a positive signal) - but always judge the current mission on its own merits too, not just pattern-matching to the past.\n` : ""}
 Honesty mandate is critical: never state a guess as fact. If you are not sure, say so and use confidence "low" or "unknown".
 
 IMPORTANT: The mission title/description may be written in Persian (Farsi) or any other language. This is completely normal for this project — do NOT lower your score or confidence just because the content is not in English. Read and understand it in its original language, then assess it exactly as you would in English. Only lower confidence for genuine ambiguity in the idea itself, never for the language it's written in.
@@ -71,7 +71,7 @@ Mission description: ${mission.description}`;
     return { ...parsed, usage: data.usage };
 }
 
-async function generateCode({ constitution, mission, currentHtml, publicSupabaseUrl, publicSupabaseAnonKey, override, isDashboard }) {
+async function generateCode({ constitution, mission, currentHtml, publicSupabaseUrl, publicSupabaseAnonKey, override, isDashboard, history }) {
     const apiKey = override?.apiKey || process.env.AI_API_KEY;
     const baseURL = override?.baseUrl || process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
     const model = override?.model || process.env.AI_MODEL || "llama-3.3-70b-versatile";
@@ -116,6 +116,7 @@ chat with the Deputy, manage API keys). Extreme caution is required:
 - Only ADD new, clearly isolated, purely additive UI (e.g. a new small panel, a new read-only info widget) that cannot break existing functionality.
 - If you cannot implement the mission with near-zero risk of breaking the control panel, set confidence to "low" and explain why in your response instead of guessing.
 ` : ''}
+${history ? `\n${history}\nLearn from this: avoid repeating approaches that were rejected for a clear technical reason (e.g. broken/deprecated APIs, non-functional code), and prefer patterns similar to what was previously approved and worked well.\n` : ''}
 Rules:
 - Only output a change that is small, low-risk, and directly implements the mission. Do not invent unrelated features.
 - Your "code" field should contain ONLY the new snippet to insert (HTML/CSS/JS), not the whole page again.

@@ -135,6 +135,14 @@ function showApp() {
   loadMissions();
 }
 
+async function getFreshToken() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.access_token) {
+    authToken = session.access_token;
+  }
+  return authToken;
+}
+
 // ---- Tab Navigation ----
 function showTab(tabName, btnEl) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -176,7 +184,7 @@ async function triggerHeartbeat() {
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${authToken}`,
+        'Authorization': `Bearer ${await getFreshToken()}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ action: 'trigger_heartbeat' })
@@ -210,13 +218,17 @@ async function sendMessage() {
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${authToken}`,
+        'Authorization': `Bearer ${await getFreshToken()}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ action: 'chat_deputy', message })
     });
 
-    if (!response.ok) throw new Error('رابط‌پیام دستیاب نیست');
+    if (!response.ok) {
+      let bodyText = '';
+      try { bodyText = await response.text(); } catch {}
+      throw new Error(`کد ${response.status} - ${bodyText || 'بدون جزئیات'}`);
+    }
 
     const data = await response.json();
     currentMissionDraft = data;
@@ -291,7 +303,7 @@ async function addAPI() {
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${authToken}`,
+        'Authorization': `Bearer ${await getFreshToken()}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -322,7 +334,7 @@ async function removeAPI(id) {
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${authToken}`,
+        'Authorization': `Bearer ${await getFreshToken()}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ action: 'delete_api_key', id })
@@ -343,7 +355,7 @@ async function loadAPIs() {
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${authToken}`,
+        'Authorization': `Bearer ${await getFreshToken()}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ action: 'list_api_keys' })

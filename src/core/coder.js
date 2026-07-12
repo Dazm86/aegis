@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { generateCode } = require("../lib/openaiClient");
 const { getActiveTextKey } = require("../lib/apiKeys");
+const { getRecentHistory } = require("../lib/history");
 
 const VALID_CONFIDENCE = ["high", "medium", "low", "unknown"];
 
@@ -26,6 +27,11 @@ async function runCoder({ constitution, mission, supabase }) {
         console.log(`🔑 Using stronger override model for Coder: ${override.model || "(default model for that provider)"}`);
     }
 
+    const history = supabase ? await getRecentHistory(supabase) : "";
+    if (history) {
+        console.log("📚 Coder is using recent mission history for context.");
+    }
+
     if (target === "dashboard") {
         console.log("⚠️  This mission targets the OWNER'S CONTROL PANEL (staging copy). Extra caution applies.");
     }
@@ -37,7 +43,8 @@ async function runCoder({ constitution, mission, supabase }) {
         publicSupabaseUrl: process.env.SUPABASE_URL,
         publicSupabaseAnonKey: process.env.PUBLIC_SUPABASE_ANON_KEY,
         override,
-        isDashboard: target === "dashboard"
+        isDashboard: target === "dashboard",
+        history
     });
 
     const violations = [];

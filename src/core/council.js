@@ -3,6 +3,7 @@ const path = require("path");
 const { askRole } = require("../lib/openaiClient");
 const { checkResponse } = require("./enforcer");
 const { getActiveTextKey } = require("../lib/apiKeys");
+const { getRecentHistory } = require("../lib/history");
 
 const modelsConfig = JSON.parse(
     fs.readFileSync(path.join(__dirname, "..", "..", "config", "models.json"), "utf8")
@@ -21,6 +22,11 @@ async function runCouncil(mission, supabase) {
         console.log(`🔑 Using stronger override model for council: ${override.model || "(default model for that provider)"}`);
     }
 
+    const history = supabase ? await getRecentHistory(supabase) : "";
+    if (history) {
+        console.log("📚 Council is using recent mission history for context.");
+    }
+
     for (const roleCfg of modelsConfig.roles) {
         if (!roleCfg.enabled) {
             console.log(`⏸️  Skipping suspended role: ${roleCfg.roleId}`);
@@ -37,7 +43,8 @@ async function runCouncil(mission, supabase) {
             roleDescription: roleInfo.description,
             constitution,
             mission,
-            override
+            override,
+            history
         });
 
         const violations = checkResponse(roleCfg.roleId, result);
