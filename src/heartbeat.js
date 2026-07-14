@@ -10,6 +10,7 @@ const { runDeployer } = require("./core/deployer");
 const { runSafetyCheck } = require("./core/safetyCheck");
 const { maybeGenerateIdea } = require("./core/ideaGenerator");
 const { maybePromoteToProduction } = require("./core/promoter");
+const { runAutomatedTests } = require("./core/autoTest");
 const fs = require("fs");
 const path = require("path");
 
@@ -95,8 +96,25 @@ if (!mission) {
     const { deployedCount } = await runDeployer(supabase);
     if (deployedCount > 0) {
         console.log(`✅ Deployed ${deployedCount} change(s) to site-staging.`);
+
+        console.log("🧪 Running automated tests on staging pages...");
+        try {
+            const testResults = await runAutomatedTests(supabase);
+            for (const r of testResults) {
+                if (r.passed) {
+                    console.log(`   ✅ ${r.target}: no errors detected`);
+                } else {
+                    console.log(`   ❌ ${r.target}: ${r.errors.length} error(s) - ${r.errors.join(" | ")}`);
+                }
+            }
+        } catch (err) {
+            console.error(`⚠️  Automated testing failed to run: ${err.message}`);
+        }
     } else {
         console.log("💤 Nothing new to deploy.");
+    }
+
+    console.log("🏗️  Checking if stable staging changes are ready for production...");
     }
 
     console.log("🏗️  Checking if stable staging changes are ready for production...");

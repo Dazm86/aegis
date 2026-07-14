@@ -110,11 +110,19 @@ Replace URL-ENCODED-ENGLISH-DESCRIPTION with a short English description of the 
 
 If the mission needs spoken audio/narration, you can use the browser's built-in text-to-speech (free, no API key, no external service, works instantly):
 function aegisSpeak(text, lang) {
+  if (!('speechSynthesis' in window)) { alert('مرورگر شما از پخش صدا پشتیبانی نمی‌کند.'); return; }
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang || 'fa-IR';
+  const voices = speechSynthesis.getVoices();
+  const matchingVoice = voices.find(v => v.lang === utterance.lang);
+  if (!matchingVoice && voices.length > 0) {
+    console.warn('No voice found for ' + utterance.lang + ', using default voice instead.');
+  } else if (matchingVoice) {
+    utterance.voice = matchingVoice;
+  }
   speechSynthesis.speak(utterance);
 }
-Attach this to a button click (e.g. a "🔊 پخش صدا" button calling aegisSpeak('...text...', 'fa-IR')) rather than auto-playing on page load, since browsers block/annoy users with autoplay audio without a user gesture. Use lang 'fa-IR' for Persian text, 'en-US' for English text. Only use this if the mission genuinely calls for spoken/narrated content. Note: this plays live in the visitor's browser using their device's voice; it does not produce a downloadable audio file, and voice quality depends on the visitor's device/OS.
+Attach this to a button click (e.g. a "🔊 پخش صدا" button calling aegisSpeak('...text...', 'fa-IR')) rather than auto-playing on page load, since browsers block/annoy users with autoplay audio without a user gesture. Use lang 'fa-IR' for Persian text, 'en-US' for English text. Only use this if the mission genuinely calls for spoken/narrated content. Important limitations to be honest about in your explanation field: this plays live using the visitor's own device voice (not a downloadable audio file), and many devices do not have a Persian (fa-IR) voice installed, in which case it may silently fall back to a different voice or produce no sound - this is a real platform limitation, not something code alone can fully fix.
 ${isDashboard ? `
 ⚠️ CRITICAL: This mission targets the OWNER'S CONTROL PANEL (a staging copy of it), not the public site.
 This page contains the Owner's only tools to control the whole system (approve/reject code, freeze the system,
