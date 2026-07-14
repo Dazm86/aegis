@@ -115,9 +115,6 @@ if (!mission) {
     }
 
     console.log("🏗️  Checking if stable staging changes are ready for production...");
-    }
-
-    console.log("🏗️  Checking if stable staging changes are ready for production...");
     try {
         const promotionResult = await maybePromoteToProduction(supabase);
         if (promotionResult.promoted) {
