@@ -41,6 +41,9 @@
   
   <!-- mission #34: افزودن معرفی صوتی -->
   <button onclick='aegisSpeak("این محیط آزمایشی (staging) است. تغییرات تأییدشده پس از عبور از محیط آزمایشی، اینجا اعمال می‌شوند.", "fa-IR")' style='background-color: #E8A33D; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer;'>🔊 پخش صدا</button><script>function aegisSpeak(text, lang) { const utterance = new SpeechSynthesisUtterance(text); utterance.lang = lang || 'fa-IR'; speechSynthesis.speak(utterance); }</script>
+  
+  <!-- mission #36: افزودن نمودار پیشرفت ماموریت‌ها -->
+  <section id='mission-progress'><h2>پیشرفت ماموریت‌ها</h2><canvas id='progress-chart' width='200' height='200'></canvas><script>const sb = supabase.createClient('https://xufbpsdtzrjnwvkpalbu.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODc2NzIsImV4cCI6MjA5ODk2MzY3Mn0.X1EnpBZxrDdFRz6tRxpmOJIyTAEiOXZGG-NHIqTC5p0'); sb.from('missions').select('id, status').then(data => { const approved = data.data.filter(mission => mission.status === 'approved').length; const rejected = data.data.filter(mission => mission.status === 'rejected').length; const ctx = document.getElementById('progress-chart').getContext('2d'); new Chart(ctx, { type: 'pie', data: { labels: ['تایید شده', 'رد شده'], datasets: [{ label: 'پیشرفت ماموریت‌ها', data: [approved, rejected], backgroundColor: ['rgba(54, 162, 235, 0.2)', 'rgba(255, 99, 132, 0.2)'], borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'], borderWidth: 1 }], }, options: { scales: { y: { beginAtZero: true } } } }); });</script></section>
   <!-- AEGIS_INSERT_POINT -->
 </body>
 </html>
