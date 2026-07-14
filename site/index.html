@@ -11,7 +11,39 @@
 </head>
 <body>
   <h1>Aegis</h1>
-  <p>این سایت اصلی (production) است. تغییرات تأییدشده پس از عبور از محیط آزمایشی، اینجا اعمال می‌شوند.</p>
+  <p>این محیط آزمایشی (staging) است. تغییرات تأییدشده پس از عبور از محیط آزمایشی، اینجا اعمال می‌شوند.</p>
+  
+  <!-- mission #6: Add a footer with copyright text -->
+  <footer style="position: absolute; bottom: 0; width: 100%; text-align: center;">&copy; 2026 Aegis</footer>
+  
+  <!-- mission #5: Add a footer with copyright text -->
+  <footer style='text-align: center; padding: 10px; background-color: #f0f0f0; clear: both; position: relative; bottom: 0; width: 100%;'>© 2026 Aegis</footer>
+  
+  <!-- mission #12: ثبت نمره شورا -->
+  <script>const sb = supabase.createClient("https://xufbpsdtzrjnwvkpalbu.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODc2NzIsImV4cCI6MjA5ODk2MzY3Mn0.X1EnpBZxrDdFRz6tRxpmOJIyTAEiOXZGG-NHIqTC5p0"); sb.from('missions').select('id, title, description, status').then(data => { console.log(data); const councilScores = data.data.map(council => council.score); councilScores.forEach(score => { const councilElement = document.getElementById(`council-${score.id}`); if (councilElement) { councilElement.innerHTML += ` <span>نمره: ${score.score}</span>`; } }); });</script>
+  
+  <!-- mission #16: افزودن فوتر به صفحه -->
+  <footer style='text-align: center; padding: 10px; background-color: #0B0E14; clear: both; position: relative; bottom: 0; width: 100%;'><p style='color: #E8A33D;'>سیستم Aegis &copy; 2026 <a style='color: #E8A33D;' href='https://github.com/aegis'>GitHub</a> | <a style='color: #E8A33D;' href='/dashboard'>داشبورد</a></p></footer>
+  
+  <!-- mission #4: Add a footer with copyright text -->
+  <footer style='text-align: center; padding: 10px; background-color: #f0f0f0; clear: both; position: relative; bottom: 0; width: 100%;'>© 2026 Aegis</footer>
+  
+  <!-- mission #21: دکمه زرد بی‌فعالیت -->
+  <button style='position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #FFFF00; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer;' disabled>دکمه زرد بی‌فعالیت</button>
+  <!-- mission #27: گزارش و گفتگوی معاون -->
+  <section id='deputy-report'><h2>گزارش معاون</h2><p id='project-status'></p><script>const sb = supabase.createClient('https://xufbpsdtzrjnwvkpalbu.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODc2NzIsImV4cCI6MjA5ODk2MzY3Mn0.X1EnpBZxrDdFRz6tRxpmOJIyTAEiOXZGG-NHIqTC5p0'); sb.from('missions').select('id, title, description, status').then(data => { const projectStatus = data.data.map(mission => mission.status).join(', '); document.getElementById('project-status').innerHTML = `وضعیت پروژه: ${projectStatus}`; });</script></section>
+  
+  <!-- mission #32: بهینه‌سازی صفحه اصلی سایت -->
+  <style>body { font-family: system-ui, sans-serif; background: #0B0E14; color: #E8E6DE; margin: 0; padding: 40px 20px; } h1 { color: #E8A33D; } .welcome-message { font-size: 18px; margin-bottom: 20px; } .main-content { display: flex; flex-direction: column; align-items: center; }</style><h1>Aegis</h1><p class='welcome-message'>این محیط آزمایشی (staging) است. تغییرات تأییدشده پس از عبور از محیط آزمایشی، اینجا اعمال می‌شوند.</p><div class='main-content'></div>
+  
+  <!-- mission #33: افزودن بخش اخبار و به‌روزرسانی‌ها -->
+  <section id='news-section'><h2>اخبار و به‌روزرسانی‌ها</h2><ul id='news-feed'></ul></section><script>const sb = supabase.createClient('https://xufbpsdtzrjnwvkpalbu.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODc2NzIsImV4cCI6MjA5ODk2MzY3Mn0.X1EnpBZxrDdFRz6tRxpmOJIyTAEiOXZGG-NHIqTC5p0'); sb.from('missions').select('id, title, description, status').then(data => { const newsFeed = data.data.map(mission => `<li>${mission.title} - ${mission.description}</li>`).join(''); document.getElementById('news-feed').innerHTML = newsFeed; });</script>
+  
+  <!-- mission #34: افزودن معرفی صوتی -->
+  <button onclick='aegisSpeak("این محیط آزمایشی (staging) است. تغییرات تأییدشده پس از عبور از محیط آزمایشی، اینجا اعمال می‌شوند.", "fa-IR")' style='background-color: #E8A33D; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer;'>🔊 پخش صدا</button><script>function aegisSpeak(text, lang) { const utterance = new SpeechSynthesisUtterance(text); utterance.lang = lang || 'fa-IR'; speechSynthesis.speak(utterance); }</script>
+  
+  <!-- mission #36: افزودن نمودار پیشرفت ماموریت‌ها -->
+  <section id='mission-progress'><h2>پیشرفت ماموریت‌ها</h2><canvas id='progress-chart' width='200' height='200'></canvas><script>const sb = supabase.createClient('https://xufbpsdtzrjnwvkpalbu.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZmJwc2R0enJqbnd2a3BhbGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODc2NzIsImV4cCI6MjA5ODk2MzY3Mn0.X1EnpBZxrDdFRz6tRxpmOJIyTAEiOXZGG-NHIqTC5p0'); sb.from('missions').select('id, status').then(data => { const approved = data.data.filter(mission => mission.status === 'approved').length; const rejected = data.data.filter(mission => mission.status === 'rejected').length; const ctx = document.getElementById('progress-chart').getContext('2d'); new Chart(ctx, { type: 'pie', data: { labels: ['تایید شده', 'رد شده'], datasets: [{ label: 'پیشرفت ماموریت‌ها', data: [approved, rejected], backgroundColor: ['rgba(54, 162, 235, 0.2)', 'rgba(255, 99, 132, 0.2)'], borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'], borderWidth: 1 }], }, options: { scales: { y: { beginAtZero: true } } } }); });</script></section>
   <!-- AEGIS_INSERT_POINT -->
 </body>
 </html>
